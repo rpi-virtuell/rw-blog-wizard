@@ -1,0 +1,20 @@
+/**
+ * @package   RW Blog Wizard
+ * @author    Joachim Happel
+ * @license   GPL-2.0+
+ * @link      https://github.com/rpi-virtuell/rw-blog-wizard
+ */
+
+.rw-blog-wizard-message{
+    position: relative;
+    border: 3px solid #2E789B;
+    text-align: center;
+    background-color: darkred;
+}
+.rw-blog-wizard-message, .rw-blog-wizard-message a{
+    color:snow;
+}
+.rw-blog-wizard-message a:hover{
+    color:lightgoldenrodyellow;
+    text-decoration: underline;
+}
