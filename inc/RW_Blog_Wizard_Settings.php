@@ -40,20 +40,15 @@ class RW_Blog_Wizard_Settings {
 
         /* --- Create a first Section 1 ----- */
         
-        //@TODO Titel des Optionsbereich 1
-        $section_title = 'Choose Plugin Options';
-
-        /**
-         * @TODO Einleitungstext im Optionsbereich 1
-         */
+        $section_title = 'Choose the Blog-Type';
 
         register_setting( 'section_1', RW_Blog_Wizard_Settings::$option_name );
 
         add_settings_section(
             'rw-blog-wizard-setting-page',                                          // id of the setting page
-            __( 'Sample Options', RW_Blog_Wizard::get_textdomain() ),        // section title
+            __( 'Application Scenarios', RW_Blog_Wizard::get_textdomain() ),        // section title
             function(){                                                             // intro text before the input fields
-                _e( 'Section intro Description....', RW_Blog_Wizard::get_textdomain() );
+                _e( 'Choose one from the following templates that best suits your needs? ', RW_Blog_Wizard::get_textdomain() );
             },
             'section_1'
         );
@@ -61,10 +56,34 @@ class RW_Blog_Wizard_Settings {
 
         /* --- Create form fiels to the first Section 1 ----- */
 
-        /**
-         * TODO Eingabefelder für Optionen
-         *  Beispiele: 
-         */
+
+        function blogtype_radio_draw()
+        {
+            $optname = 'blogtype';
+            $options = RW_Blog_Wizard_Settings::$options;   //read exiting value from wp options table
+
+            $value = ( isset( $options[$optname] ) && $options[$optname] );
+
+            $type = array(
+                'blog' => 'Blog, Tagebuch, Lerntagebuch, Logbuch' ,
+                'portfolio' => 'Portfolio, Vistenkarte', 'Vorstellung', 'Projektvorstellung' ,
+                'arts' => '' ,
+                'oer' => '' ,
+                'event' => '' ,
+                'doku' => 'Tagungsdokumentation' ,
+                'collection' => '' ,
+                'cms' => '' ,
+                'magazin' => '' ,
+                'geodaten' => '' ,
+            );
+
+
+            ?>
+            <input type="radio" name="demo-radio" value="1" <?php checked(1, get_option('demo-radio'), true); ?>>1
+            <input type="radio" name="demo-radio" value="2" <?php checked(2, get_option('demo-radio'), true); ?>>2
+            <?php
+        }
+
 
         /* --- Checkbox 1 ----- */
 
@@ -104,10 +123,18 @@ class RW_Blog_Wizard_Settings {
             'rw-blog-wizard-setting-page'
         );
 
+
+
+
+
         /* --- Selectbox ----- */
 
         function rw_selectfield_draw(  ) {
             $options = RW_Blog_Wizard_Settings::$options;
+
+            $blog_types = array(
+
+            );
 
             $pages = get_pages();
             foreach ( $pages as $page ) {
