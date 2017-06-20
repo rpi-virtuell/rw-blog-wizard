@@ -157,8 +157,14 @@ class RW_Blog_Wizard {
         //@TODO  Hier Filter und Actions einbinden.
 
 
-        add_action('init',                      array( 'RW_Blog_Wizard_Core','init' ) );
+        add_action('init',                       array( 'RW_Blog_Wizard_Core','init' ) );
         do_action( 'rw_blog_wizard_init' );
+
+        add_action( 'admin_post_rw_remote_auth_client_network_settings',
+                                                 array( 'RW_Blog_Wizard_Settings', 'network_settings' ) );
+        add_action( 'admin_init',                array( 'RW_Blog_Wizard_Settings', 'register_settings' ) );
+        add_action( 'admin_menu',                array( 'RW_Blog_Wizard_Settings', 'options_menu' ) );
+        add_action( 'network_admin_menu',        array( 'RW_Blog_Wizard_Settings', 'options_menu' ) );
 
 
         //enable and load css and js files
@@ -167,16 +173,14 @@ class RW_Blog_Wizard {
          do_action( 'rw_blog_wizard_enqueue' );
 
         //enable ajax examples
-         add_action( 'admin_enqueue_scripts',    array( 'RW_Blog_Wizard_Core','enqueue_js' ) );
-         add_action( 'wp_ajax_rw_blog_wizard_core_ajaxresponse' ,array( 'RW_Blog_Wizard_Core','ajaxresponse' )  );
+        // add_action( 'admin_enqueue_scripts',    array( 'RW_Blog_Wizard_Core','enqueue_js' ) );
+        // add_action( 'wp_ajax_rw_blog_wizard_core_ajaxresponse' ,array( 'RW_Blog_Wizard_Core','ajaxresponse' )  );
 
         //enable an widget
         //add_action('widgets_init',             array( 'RW_Blog_Wizard_Widget','init' ) );
         //do_action( 'rw_blog_wizard_widget_init' );
 
-        //enable options setting in backend
-        add_action('init',             array( 'RW_Blog_Wizard_Settings','init' ) ,99);
-        do_action( 'rw_blog_wizard_settings_init' );
+        
 
     }
 

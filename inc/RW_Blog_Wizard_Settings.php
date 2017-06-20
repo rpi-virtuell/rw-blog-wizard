@@ -12,282 +12,203 @@
 */
 class RW_Blog_Wizard_Settings {
 
-    static public $option_name = 'rw-blog-wizard';
-    static public $options;
-
-    static public function init(){
-
-        self::check_nonce_requests();
-        self::init_options();
-
-        add_action( 'admin_menu', array('RW_Blog_Wizard_Settings','options_page') );
-        add_action( 'network_admin_menu', array('RW_Blog_Wizard_Settings','options_page') );
-
-        //enable custum dashboard widget
-        //add_action('wp_dashboard_setup', array('RW_Blog_Wizard_Settings', 'dashboard_widgets') );
-    }
-
-
     /**
-     * @TODO: Create the form fields in one or more sections
-     * @use_action: admin_menu
-    */
-    static public function options_page(  ) {
-
-        //add a options page 
-        add_options_page( 'rw-blog-wizard', 'RW Blog Wizard', 'manage_options', 'rw-blog-wizard', array('RW_Blog_Wizard_Settings', 'the_options_form') );
-
-
-        /* --- Create a first Section 1 ----- */
-        
-        $section_title = 'Choose the Blog-Type';
-
-        register_setting( 'section_1', RW_Blog_Wizard_Settings::$option_name );
-
-        add_settings_section(
-            'rw-blog-wizard-setting-page',                                          // id of the setting page
-            __( 'Application Scenarios', RW_Blog_Wizard::get_textdomain() ),        // section title
-            function(){                                                             // intro text before the input fields
-                _e( 'Choose one from the following templates that best suits your needs? ', RW_Blog_Wizard::get_textdomain() );
-            },
-            'section_1'
-        );
-
-
-        /* --- Create form fiels to the first Section 1 ----- */
-
-
-        function blogtype_radio_draw()
-        {
-            $optname = 'blogtype';
-            $options = RW_Blog_Wizard_Settings::$options;   //read exiting value from wp options table
-
-            $value = ( isset( $options[$optname] ) && $options[$optname] );
-
-            $type = array(
-                'blog' => 'Blog, Tagebuch, Lerntagebuch, Logbuch' ,
-                'portfolio' => 'Portfolio, Vistenkarte', 'Vorstellung', 'Projektvorstellung' ,
-                'arts' => '' ,
-                'oer' => '' ,
-                'event' => '' ,
-                'doku' => 'Tagungsdokumentation' ,
-                'collection' => '' ,
-                'cms' => '' ,
-                'magazin' => '' ,
-                'geodaten' => '' ,
-            );
-
-
-            ?>
-            <input type="radio" name="demo-radio" value="1" <?php checked(1, get_option('demo-radio'), true); ?>>1
-            <input type="radio" name="demo-radio" value="2" <?php checked(2, get_option('demo-radio'), true); ?>>2
-            <?php
-        }
-
-
-        /* --- Checkbox 1 ----- */
-
-        function rw_checkbox_1_draw(  ) {
-
-            $optname = 'option1';
-
-            $options = RW_Blog_Wizard_Settings::$options;   //read exiting value from wp options table
-            $checked = ( isset( $options[$optname] ) && $options[$optname] ) ? true : false;
-            ?>
-            <input class="rw-blog-wizard-option-checkbox" type='checkbox' name='<?php echo RW_Blog_Wizard_Settings::$option_name; ?>[<?php echo $optname;?>]' <?php checked( $checked ); ?> value='1'>
-            <?php _e('If activated ... ',RW_Blog_Wizard::get_textdomain()) ; ?>
-            <?php
-
-        }
-        add_settings_field(
-            'option1',                                              // Option Index
-            __( 'Check this', RW_Blog_Wizard::get_textdomain() ),   // Label
-            'rw_checkbox_1_draw',                                   // function to draw HTML Input
-            'section_1',                                            // section slug
-            'rw-blog-wizard-setting-page'                           // id der setting page
-        );
-
-        /* --- Textfield ----- */
-        function rw_textfield_draw(  ) {
-            $options = RW_Blog_Wizard_Settings::$options;
-            ?>
-            <input class="rw-blog-wizard-option-textfield" type='text' name='<?php echo RW_Blog_Wizard_Settings::$option_name; ?>[option2]' value='<?php echo $options['option2']; ?>'>
-            <?php
-        }
-
-        add_settings_field(
-            'option2',
-            __( 'A Textbox', RW_Blog_Wizard::get_textdomain() ),
-            'rw_textfield_draw',
-            'section_1',
-            'rw-blog-wizard-setting-page'
-        );
-
-
-
-
-
-        /* --- Selectbox ----- */
-
-        function rw_selectfield_draw(  ) {
-            $options = RW_Blog_Wizard_Settings::$options;
-
-            $blog_types = array(
-
-            );
-
-            $pages = get_pages();
-            foreach ( $pages as $page ) {
-                $selected = ($options['option3'] == $page->ID)? ' selected':'';
-                $select_option = '<option value="' . $page->ID  . '"'.$selected.'>';
-                $select_option .= $page->post_title;
-                $select_option .= '</option>';
-
-            }
-
-            ?>
-            <select class="rw-blog-wizard-option-select" type='text' name='<?php echo RW_Blog_Wizard_Settings::$option_name; ?>[option3]' selected='<?php echo $options['option3']; ?>'>
-                <option><?php  echo __('Please Choose',RW_Blog_Wizard::get_textdomain()); ?></option>
-                <?php  echo $select_option; ?>
-            </select>
-            <?php
-        }
-
-
-        add_settings_field(
-            'option3',
-            __( 'Select a Page', RW_Blog_Wizard::get_textdomain() ),
-            'rw_selectfield_draw',
-            'section_1',
-            'rw-blog-wizard-setting-page'
-        );
-
-    }
-
-    /**
-     * @TODO Create the settings form
+     * Register all settings
      *
-     * @usedBy: add_options_page()
-     * @since 0.0.2
+     * Register all the settings, the plugin uses.
+     *
+     * @since   0.1
+     * @access  public
+     * @static
+     * @return  void
      */
-    static public function the_options_form(){
+    static public function register_settings() {
+
+        register_setting( 'rw_blog_wizard_options', 'rw_blog_wizard_type' );
+        register_setting( 'rw_blog_wizard_options', 'rw_blog_wizard_plugins' );
+        register_setting( 'rw_blog_wizard_options', 'rw_blog_wizard_options' );
+
+    }
+    /**
+     * save all network settings
+     *
+     * Register all the settings, the plugin uses.
+     *
+     * @since   0.2.0
+     * @access  public
+     * @static
+     * @return  void
+     * @useaction  admin_post_rw_blog_wizard_network_settings
+     */
+    static public function network_settings() {
+
+        check_admin_referer('rw_blog_wizard_network_settings');
+        if(!current_user_can('manage_network_options')) wp_die('FU');
+
+        $options = array(
+            'rw_blog_wizard_type',
+            'rw_blog_wizard_plugins',
+            'rw_blog_wizard_options'
+        );
+
+        foreach($options as $option){
+            if( isset( $_POST[ $option ] ) ) {
+                update_site_option( $option, ( $_POST[$option ] ) );
+            }else{
+                delete_site_option( $option );
+            }
+        }
+
+        wp_redirect(admin_url('network/settings.php?page='.RW_Blog_Wizard::$plugin_base_name));
+        exit;
+
+    }
+
+    /**
+     * Add a settings link to the  pluginlist
+     *
+     * @since   0.1
+     * @access  public
+     * @static
+     * @param   string array links under the pluginlist
+     * @return  array
+     */
+    static public function plugin_settings_link( $links ) {
+        if(is_multisite()){
+            $settings_link = '<a href="network/settings.php?page=' . RW_Blog_Wizard::$plugin_base_name . '">' . __( 'Settings' )  . '</a>';
+            if(is_super_admin()){
+                array_unshift($links, $settings_link);
+            }
+        }else{
+            $settings_link = '<a href="options-general.php?page=' . RW_Blog_Wizard::$plugin_base_name . '">' . __( 'Settings' )  . '</a>';
+            array_unshift($links, $settings_link);
+        }
+        return $links;
+    }
+
+    /**
+     * Get the Default type
+     *
+     * @since   0.1
+     * @access  public
+     * @static
+     * @return  string
+     */
+    static public function get_blog_default_type() {
+        return get_site_option( 'rw_blog_wizard_type', 'blog' );
+    }
+
+    /**
+     * Generate the options menu page
+     *
+     * Generate the options page under the options menu
+     *
+     * @since   0.1
+     * @access  public
+     * @static
+     * @return  void
+     */
+
+
+    static public function options_menu() {
+        if(is_multisite()){
+
+            add_submenu_page(
+                'settings.php',
+                'Blog Wizard',
+                __('Remote Auth Client', RW_Blog_Wizard::$textdomain ),
+                'manage_network_options',
+                RW_Blog_Wizard::$plugin_base_name,
+                array( 'RW_Blog_Wizard_Settings','create_options')
+            );
+
+        }else{
+
+            add_options_page(
+                'Blog Wizard',
+                __('Remote Auth Client', RW_Blog_Wizard::$textdomain ),
+                'manage_options',
+                RW_Blog_Wizard::$plugin_base_name,
+                array( 'RW_Blog_Wizard_Settings', 'create_options' )
+            );
+
+        }
+
+
+    }
+
+
+    /**
+     * Generate the options page for the plugin
+     *
+     * @since   0.1
+     * @access  public
+     * @static
+     *
+     * @return  void
+     */
+    static public function create_options() {
+
+        if(is_multisite()){
+            $form_action = admin_url('admin-post.php?action=rw_blog_wizard_network_settings');
+        }else{
+            $form_action = 'options.php';
+        }
+
+        if ( !current_user_can( 'manage_options' ) )  {
+            wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
+        }
+
 
         ?>
-        <form class="rw-blog-wizard-option-form" action='options.php' method='post'>
+        <div class="wrap"  id="rw_blog_wizard_main_settings">
+            <h2><?php _e( 'Blog Wizard ', RW_Blog_Wizard::$textdomain ); ?><?php _e( 'Settings');?></h2>
+            <p><?php _e( 'Define Templates', RW_Blog_Wizard::$textdomain ); ?></p>
+            <form method="POST" action="<?php echo $form_action; ?>"><fieldset class="widefat">
 
-            <h1><?php _e('Settings'); ?> > RW Blog Wizard </h1>
-            <?php
-            _e('Settings for RW Blog Wizard',RW_Blog_Wizard::get_textdomain());
+                    <?php
+                    if(is_multisite()){
+                        wp_nonce_field('rw_blog_wizard_network_settings');
+                    }else{
+                        settings_fields( 'rw_blog_wizard_options' );
+                    }
 
-            echo '<hr>';
+                    $blog_list = get_sites(  array(
+                        'search'=> 'template-'
+                    ));
 
-            //slot for js/ajax messages
-            echo '<div class="notice notice-info"><p id="rw-blog-wizard-setting-page-ajaxresponse" ></p></div>';
+                    foreach ($blog_list AS $blog) {
+                        $blog_id = get_object_vars($blog)["blog_id"];
+                        $domain = get_object_vars($blog)["domain"];
+                        $path = get_object_vars($blog)["path"];
+                        $blog_name = get_blog_details($blog_id)->blogname;
 
-            settings_fields( 'section_1' );
-            do_settings_sections( 'section_1' );
+                        echo $blog_name.': '.$domain.$path.'<br />';
+                    }
 
 
-            echo '<hr>';
 
-            submit_button();
 
-            self::print_set_defaults_button();
+                    ?>
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="rw_blog_wizard_type"><?php _e( 'Typ', RW_Blog_Wizard::$textdomain ); ?></label>
+                            </th>
+                            <td>
+                                <input id="rw_blog_wizard_type" class="regular-text" type="text" value="<?php echo self::get_blog_default_type(); ?>" aria-describedby="blog type" name="rw_blog_wizard_type">
+                                <p id="blog-type-description" class="description"><?php _e( 'Choose a Usecase', RW_Blog_Wizard::$textdomain); ?></p>
+                            </td>
+                        </tr>
 
-            ?>
 
-        </form>
-        <hr>
-        RW Blog Wizard <?php echo __('was developed by',RW_Blog_Wizard::get_textdomain()); ?> Demo Autor (rpi-virtuell).
+                    </table>
+
+                    <br/>
+                    <input type="submit" class="button-primary" value="<?php _e('Save Changes' )?>" />
+            </form>
+        </div>
         <?php
-    }
-
-    /**
-     * set default values for this plugin in the wp options table
-     *
-     * @since 0.0.2
-     */
-    static public function init_options(){
-
-        RW_Blog_Wizard_Settings::$options = get_option( RW_Blog_Wizard_Settings::$option_name );
-        if(!RW_Blog_Wizard_Settings::$options){
-
-            update_option(RW_Blog_Wizard_Settings::$option_name,array(
-                'option1'=>0,
-                'option2'=>'default wert',
-                'option3'=>''
-            ));
-
-        }
-
-    }
-
-    /**
-     * checks incomming url request
-     *
-     */
-    static function check_nonce_requests () {
-
-        //Beispiel: Alle Plugin Einstellungen in der DB löschen set_defaults_button()
-
-        if (isset($_GET['rw_blog_wizard_nonce']) && wp_verify_nonce($_GET['rw_blog_wizard_nonce'], 'set_defaults_button' ) ) {
-
-            delete_option(RW_Blog_Wizard_Settings::$option_name);
-
-            wp_redirect(admin_url( 'options-general.php?page=rw-blog-wizard&action=set_defaults_button' ));
-
-        }elseif (isset($_GET['action']) && $_GET['action']=='set_defaults_button') {
-
-            $url = admin_url( 'options-general.php?page=rw-blog-wizard' );
-            RW_Blog_Wizard::notice_admin('success',RW_Blog_Wizard::$plugin_name. ': alle Einstellungen wurden zurückgesetzt. <b>[<a href="'.$url.'">Ok. Hide Notice.</a>]</b>');
-
-        }
-    }
-
-    /**
-     * Button (link) used in the form of settings page
-     *
-     * @since 0.0.2
-     */
-    static function print_set_defaults_button () {
-
-        //use Wordpress Nonces for url based commands ( https://codex.wordpress.org/Wordpress_Nonce_Implementation )
-
-        $nonce_url = wp_nonce_url( admin_url( 'options-general.php?page=rw-blog-wizard' ), 'set_defaults_button', 'rw_blog_wizard_nonce' );
-
-        if (!isset($_GET['rw_blog_wizard_nonce'])) {
-            ?>
-            <a href="<?php print $nonce_url; ?>" class="button">
-                <?php echo __('Reset all settings to default', RW_Blog_Wizard::get_textdomain()); ?>
-            </a>
-            <?php
-        }
-    }
-
-
-    /**
-     * Add a custom Dashboard widget to the rop of the widgets
-     * @use_action wp_dashboard_setup
-     *
-     * @link https://codex.wordpress.org/Dashboard_Widgets_API
-     */
-    public static  function dashboard_widgets(){
-        global $wp_meta_boxes;
-
-        wp_add_dashboard_widget('rw_blog_wizard_widget',  __( 'RW Blog Wizard Help' , RW_Blog_Wizard::get_textdomain()), function(){
-            echo __( 'Some Instructions to config this plugin...' , RW_Blog_Wizard::get_textdomain());
-        });
-
-        $origin_dashboard = $wp_meta_boxes['dashboard']['normal']['core'];
-        $my_widget = array( 'example_dashboard_widget' => $origin_dashboard['rw_blog_wizard_widget'] );
-
-        unset( $origin_dashboard['rw_blog_wizard_widget'] );
-        $new_dashboard = array_merge( $my_widget, $origin_dashboard );
-        // Save the sorted array back into the original metaboxes
-        $wp_meta_boxes['dashboard']['normal']['core'] = $new_dashboard;
-
-        //remove wordpress feeds widget
-        remove_meta_box( 'dashboard_primary', 'dashboard', 'side' );
     }
 
 
