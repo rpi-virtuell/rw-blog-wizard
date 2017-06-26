@@ -9,10 +9,77 @@ RW Blog Wizard
 Description
 ---------------------
  Multisiteplugin, das dem Administrator eines Blogs die Möglichkeit gibt, vorkonfigurierte Plugins und Themes zu laden.
+ Vorkonfigurierte Blogs haben im Namen(Slug) den Prefix "template-"
  
  
-Features:
+  
+ 
+Templates:
 ---------------------
+ Vorauswahl von Nutzungsszenarien:
+ * Tagebuch / Logbuch / Akadimisches Blog
+ * Tagungseinladung
+ * Rezensionen / Reviews
+ * Projektpräsentation
+ * Portfolio / Biographie
+ * Unterrichtsmaterialien / OER
+    * H5P
+    * Learning Apps
+    * iFrame
+    * Padlet
+    * Formulare
+    * Mindmap
+    * Chat
+    * Expedition (via Formular)
+ * E-Book
+ * Schulbuch
+ * Lernwelt / Advance Organizer
+ * Newspaper / Newsletter / Aggregator
+ * CMS / Webauftritt
+
+ 
+ Generelle Plugins (optional inzuzufügen)
+ ------------------------
+ **SEO**
+ * Statify
+ 
+ **Interkationen**:
+
+ * Formulare (gravity)
+ * Quiz
+ * Poll
+ 
+ **Education**
+
+ * H5P
+ * Mindmap 
+ * Embed Padlet 
+ 
+ **Präsentation**
+
+ * Lightbox
+ * Slider
+ * Fotogalerie
+  
+ **Social Media**
+ 
+ * Social Sharing
+ * Twitter
+ * CC - Lizenz
+ 
+ **Content Struktur**
+ 
+ * Fußnoten
+ * Topic
+ * Subpages
+ * Page/Postorder
+ * Accordion/Tabs
+ * Page Break (Seitenumbruch)
+ 
+ 
+ **Geolocation**
+ 
+ * geo my wp
 
 Installation
 ---------------------
