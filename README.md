@@ -40,7 +40,7 @@ Templates:
  
  Generelle Plugins (optional inzuzufügen)
  ------------------------
- **SEO**
+ **SEO**:
  * Statify
  
  **Interkationen**:
@@ -49,25 +49,25 @@ Templates:
  * Quiz
  * Poll
  
- **Education**
+ **Education**:
 
  * H5P
  * Mindmap 
  * Embed Padlet 
  
- **Präsentation**
+ **Präsentation**:
 
  * Lightbox
  * Slider
  * Fotogalerie
   
- **Social Media**
+ **Social Media**:
  
  * Social Sharing
  * Twitter
  * CC - Lizenz
  
- **Content Struktur**
+ **Content Struktur**:
  
  * Fußnoten
  * Topic
@@ -77,9 +77,15 @@ Templates:
  * Page Break (Seitenumbruch)
  
  
- **Geolocation**
+ **Geolocation**:
  
  * geo my wp
+
+ ** Inhaltsanreicherung **
+ * zotpress
+ * WP Pixabay
+ * wp-inject / ImageInject
+ 
 
 Installation
 ---------------------
