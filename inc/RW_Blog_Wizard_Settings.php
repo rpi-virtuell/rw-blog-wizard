@@ -94,8 +94,38 @@ class RW_Blog_Wizard_Settings {
      * @static
      * @return  string
      */
-    static public function get_blog_default_type() {
-        return get_site_option( 'rw_blog_wizard_type', 'blog' );
+    static public function get_blog_type() {
+        return get_site_option( 'rw_blog_wizard_type', 'Blog' );
+    }
+
+    static public function get_template_description($blog_id) {
+
+        global $switched;
+
+        switch_to_blog($blog_id); //switched to blog id 2, for example
+
+        $url = home_url() .'/instruction/';
+        $blog_name = get_blog_details($blog_id)->blogname;
+
+        // Get latest Post
+        $postid = url_to_postid( $url  );
+        $post = get_post( $postid );
+        $content =  apply_filters( 'the_content', $post->post_content );
+
+        $thumb = get_the_post_thumbnail( $postid, array('width'=>'250', 'height'=>'250') );
+
+        restore_current_blog(); //switched back to main site
+
+        return '
+            <table>
+                <tr>
+                    <td class="thumbnail">'.$thumb.'</td>
+                    <td>'.do_shortcode( $content, true) .'</td>
+                </tr>
+            </table>
+       
+        ';
+
     }
 
     /**
@@ -116,7 +146,7 @@ class RW_Blog_Wizard_Settings {
             add_submenu_page(
                 'settings.php',
                 'Blog Wizard',
-                __('Remote Auth Client', RW_Blog_Wizard::$textdomain ),
+                __('Blog Wizard', RW_Blog_Wizard::$textdomain ),
                 'manage_network_options',
                 RW_Blog_Wizard::$plugin_base_name,
                 array( 'RW_Blog_Wizard_Settings','create_options')
@@ -126,7 +156,7 @@ class RW_Blog_Wizard_Settings {
 
             add_options_page(
                 'Blog Wizard',
-                __('Remote Auth Client', RW_Blog_Wizard::$textdomain ),
+                __('Blog Wizard', RW_Blog_Wizard::$textdomain ),
                 'manage_options',
                 RW_Blog_Wizard::$plugin_base_name,
                 array( 'RW_Blog_Wizard_Settings', 'create_options' )
@@ -166,6 +196,15 @@ class RW_Blog_Wizard_Settings {
             <p><?php _e( 'Define Templates', RW_Blog_Wizard::$textdomain ); ?></p>
             <form method="POST" action="<?php echo $form_action; ?>"><fieldset class="widefat">
 
+                    <h2>Neue Vorlage generieren</h2>
+                    <table>
+                        <tr>
+                            <td>Name</td>
+                            <td><input name="new-blog-type" value=""></td>
+                        </tr>
+                    </table>
+
+
                     <?php
                     if(is_multisite()){
                         wp_nonce_field('rw_blog_wizard_network_settings');
@@ -177,33 +216,30 @@ class RW_Blog_Wizard_Settings {
                         'search'=> 'template-'
                     ));
 
+                    $select_options = '<table border="1">';
+
+                    $blog_type = self::get_blog_type();
+
                     foreach ($blog_list AS $blog) {
                         $blog_id = get_object_vars($blog)["blog_id"];
                         $domain = get_object_vars($blog)["domain"];
                         $path = get_object_vars($blog)["path"];
                         $blog_name = get_blog_details($blog_id)->blogname;
+                        $blog_url = get_blog_details($blog_id)->siteurl;
 
-                        echo $blog_name.': '.$domain.$path.'<br />';
+                        $checked = ($blog_type == $blog_name )? 'checked': '';
+
+                        $select_options .= '<tr>
+                                                <td><input type="radio" value="'.$blog_id.'" id="blog-'.$blog_id.'" name="blogtype" '.$checked.'></td>
+                                                <td><label for="blog-'.$blog_id.'">'. $blog_name.'</label></td>
+                                                <td>'.self::get_template_description($blog_id).'</td>
+                                            </tr>';
                     }
 
-
-
+                    $select_options .= '<table>';
 
                     ?>
-                    <table class="form-table">
-                        <tr>
-                            <th scope="row">
-                                <label for="rw_blog_wizard_type"><?php _e( 'Typ', RW_Blog_Wizard::$textdomain ); ?></label>
-                            </th>
-                            <td>
-                                <input id="rw_blog_wizard_type" class="regular-text" type="text" value="<?php echo self::get_blog_default_type(); ?>" aria-describedby="blog type" name="rw_blog_wizard_type">
-                                <p id="blog-type-description" class="description"><?php _e( 'Choose a Usecase', RW_Blog_Wizard::$textdomain); ?></p>
-                            </td>
-                        </tr>
-
-
-                    </table>
-
+                    <?php echo $select_options;?>
                     <br/>
                     <input type="submit" class="button-primary" value="<?php _e('Save Changes' )?>" />
             </form>

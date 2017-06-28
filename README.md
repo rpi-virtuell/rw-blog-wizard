@@ -63,7 +63,7 @@ Templates:
   
  **Social Media**:
  
- * Social Sharing
+ * Social Sharing, Monarch
  * Twitter
  * CC - Lizenz
  * Social Feed
@@ -77,15 +77,23 @@ Templates:
  * Accordion/Tabs
  * Page Break (Seitenumbruch)
  
+ **Content Curation**:
+ * Feed Wordpress
+ 
  
  **Geolocation**:
  
  * geo my wp
 
- ** Inhaltsanreicherung **
+ **Inhaltsanreicherung**:
  * zotpress
  * WP Pixabay
  * wp-inject / ImageInject
+ 
+ **Frontend-Editing**
+ * Frontend Editor
+ * Divi Bage Builder
+ 
  
 
 Installation
