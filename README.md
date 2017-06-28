@@ -66,6 +66,7 @@ Templates:
  * Social Sharing
  * Twitter
  * CC - Lizenz
+ * Social Feed
  
  **Content Struktur**:
  
