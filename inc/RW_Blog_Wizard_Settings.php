@@ -95,7 +95,7 @@ class RW_Blog_Wizard_Settings {
      * @return  string
      */
     static public function get_blog_type() {
-        return get_site_option( 'rw_blog_wizard_type', 'Blog' );
+        return get_option( 'rw_blog_wizard_type', 'Blog' );
     }
 
     static public function get_template_description($blog_id) {
@@ -104,15 +104,36 @@ class RW_Blog_Wizard_Settings {
 
         switch_to_blog($blog_id); //switched to blog id 2, for example
 
+
         $url = home_url() .'/instruction/';
         $blog_name = get_blog_details($blog_id)->blogname;
 
         // Get latest Post
         $postid = url_to_postid( $url  );
+
+        if(! $postid ){
+
+            $postid = wp_insert_post( array(
+                'post_title'    => wp_strip_all_tags( 'instruction' ),
+                'post_content'  => '<h1>Beschreibung des Templates fehlt</h1><p>Bitte <a href="'.$url.'">diese Seite bearbeiten</a></p>',
+                'post_status'   => 'publish',
+                'post_author'   => 1
+            ));
+
+        }
         $post = get_post( $postid );
         $content =  apply_filters( 'the_content', $post->post_content );
 
-        $thumb = get_the_post_thumbnail( $postid, array('width'=>'250', 'height'=>'250') );
+        if(has_post_thumbnail($postid)){
+            $size = 'thumbnail' ;
+            $thumb_id =  get_post_meta( $postid, '_thumbnail_id', true );
+            $thumb_url= wp_get_attachment_image_url( $thumb_id, $size );
+            $thumb = '<img src="'.$thumb_url.'" style="max-width: 250px ; max-height: 250px;">';
+
+        }else{
+            $thumb = '<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Dummy_Logo.jpg/120px-Dummy_Logo.jpg">';
+        }
+
 
         restore_current_blog(); //switched back to main site
 
@@ -152,17 +173,17 @@ class RW_Blog_Wizard_Settings {
                 array( 'RW_Blog_Wizard_Settings','create_options')
             );
 
-        }else{
-
-            add_options_page(
-                'Blog Wizard',
-                __('Blog Wizard', RW_Blog_Wizard::$textdomain ),
-                'manage_options',
-                RW_Blog_Wizard::$plugin_base_name,
-                array( 'RW_Blog_Wizard_Settings', 'create_options' )
-            );
-
         }
+
+        add_options_page(
+            'Blog Wizard',
+            __('Blog Wizard', RW_Blog_Wizard::$textdomain ),
+            'manage_options',
+            RW_Blog_Wizard::$plugin_base_name,
+            array( 'RW_Blog_Wizard_Settings', 'create_options' )
+        );
+
+
 
 
     }
@@ -193,7 +214,7 @@ class RW_Blog_Wizard_Settings {
         ?>
         <div class="wrap"  id="rw_blog_wizard_main_settings">
             <h2><?php _e( 'Blog Wizard ', RW_Blog_Wizard::$textdomain ); ?><?php _e( 'Settings');?></h2>
-            <p><?php _e( 'Define Templates', RW_Blog_Wizard::$textdomain ); ?></p>
+            <p><?php _e( 'Wähle einen Typ, der am ehehesten der geplanten Anwendung entspricht', RW_Blog_Wizard::$textdomain ); ?></p>
             <form method="POST" action="<?php echo $form_action; ?>"><fieldset class="widefat">
 
                     <h2>Neue Vorlage generieren</h2>
@@ -206,6 +227,7 @@ class RW_Blog_Wizard_Settings {
 
 
                     <?php
+
                     if(is_multisite()){
                         wp_nonce_field('rw_blog_wizard_network_settings');
                     }else{
@@ -222,10 +244,7 @@ class RW_Blog_Wizard_Settings {
 
                     foreach ($blog_list AS $blog) {
                         $blog_id = get_object_vars($blog)["blog_id"];
-                        $domain = get_object_vars($blog)["domain"];
-                        $path = get_object_vars($blog)["path"];
                         $blog_name = get_blog_details($blog_id)->blogname;
-                        $blog_url = get_blog_details($blog_id)->siteurl;
 
                         $checked = ($blog_type == $blog_name )? 'checked': '';
 

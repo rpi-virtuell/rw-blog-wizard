@@ -93,6 +93,7 @@ Templates:
  **Frontend-Editing**
  * Frontend Editor
  * Divi Bage Builder
+ * Gutenberg
  
  
 
