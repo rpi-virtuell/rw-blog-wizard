@@ -128,6 +128,33 @@ class RW_Blog_Wizard_Settings {
 
     }
 
+    static public function get_blog_template_list($network=false) {
+
+        $blog_list = get_sites(  array(
+            'search'=> 'template-'
+        ));
+
+        $select_options = '<table class="rw-blog-types">';
+
+        $blog_type = self::get_blog_type();
+
+        foreach ($blog_list AS $blog) {
+            $blog_id = get_object_vars($blog)["blog_id"];
+            $blog_name = get_blog_details($blog_id)->blogname;
+            $checked = ($blog_type == $blog_name )? 'checked': '';
+
+            $select_options .= '<tr>';
+            if($network){
+                $select_options .= '<td><input type="radio" value="'.$blog_id.'" id="blog-'.$blog_id.'" name="blogtype" '.$checked.'></td>';
+                $select_options .= '<td><label for="blog-'.$blog_id.'">'. $blog_name.'</label></td>';
+            }
+            $select_options .= '<td>'.self::get_template_description($blog_id).'</td></tr>';
+        }
+
+        $select_options .= '<table>';
+        return $select_options;
+    }
+
     /**
      * Generate the options menu page
      *
@@ -208,38 +235,12 @@ class RW_Blog_Wizard_Settings {
                     <?php
                     if(is_multisite()){
                         wp_nonce_field('rw_blog_wizard_network_settings');
+
                     }else{
                         settings_fields( 'rw_blog_wizard_options' );
                     }
-
-                    $blog_list = get_sites(  array(
-                        'search'=> 'template-'
-                    ));
-
-                    $select_options = '<table border="1">';
-
-                    $blog_type = self::get_blog_type();
-
-                    foreach ($blog_list AS $blog) {
-                        $blog_id = get_object_vars($blog)["blog_id"];
-                        $domain = get_object_vars($blog)["domain"];
-                        $path = get_object_vars($blog)["path"];
-                        $blog_name = get_blog_details($blog_id)->blogname;
-                        $blog_url = get_blog_details($blog_id)->siteurl;
-
-                        $checked = ($blog_type == $blog_name )? 'checked': '';
-
-                        $select_options .= '<tr>
-                                                <td><input type="radio" value="'.$blog_id.'" id="blog-'.$blog_id.'" name="blogtype" '.$checked.'></td>
-                                                <td><label for="blog-'.$blog_id.'">'. $blog_name.'</label></td>
-                                                <td>'.self::get_template_description($blog_id).'</td>
-                                            </tr>';
-                    }
-
-                    $select_options .= '<table>';
-
                     ?>
-                    <?php echo $select_options;?>
+                    <?php echo self::get_blog_template_list(is_network_admin());?>
                     <br/>
                     <input type="submit" class="button-primary" value="<?php _e('Save Changes' )?>" />
             </form>
