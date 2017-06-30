@@ -160,7 +160,7 @@ class RW_Blog_Wizard {
         add_action('init',                       array( 'RW_Blog_Wizard_Core','init' ) );
         do_action( 'rw_blog_wizard_init' );
 
-        add_action( 'admin_post_rw_remote_auth_client_network_settings',
+        add_action( 'admin_post_rw_blog_wizard_network_settings',
                                                  array( 'RW_Blog_Wizard_Settings', 'network_settings' ) );
         add_action( 'admin_init',                array( 'RW_Blog_Wizard_Settings', 'register_settings' ) );
         add_action( 'admin_menu',                array( 'RW_Blog_Wizard_Settings', 'options_menu' ) );
@@ -180,6 +180,10 @@ class RW_Blog_Wizard {
         //add_action('widgets_init',             array( 'RW_Blog_Wizard_Widget','init' ) );
         //do_action( 'rw_blog_wizard_widget_init' );
 
+        function my_network_admin_notices() {
+            echo '<div class="update-nag">Configuration of Foo is not complete!</div>';
+        }
+        add_action( 'network_admin_notices', array( 'RW_Blog_Wizard_Settings', 'admin_notice' ) );
         
 
     }
