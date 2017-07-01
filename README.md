@@ -103,6 +103,16 @@ Installation
  1. Download the .zip file and upload the unzipped folder to the /wp-content/plugins/ directory
  2. Activate the plugin through the 'Plugins' menu in WordPress
 
+Nutzung
+---------------------
+Nachdem sich Nutzer ein neues Blog eingerichtet haben, können sie über die Einrichtungsseite "Blog Wizard" ein Blog Typ aus einer Liste wählen.
+Bei Bestätigung der Auswahl bestehen zwei Optionen 
+- das bestehende Blog komplett neu konfiguriert. Bisherige Inhalte werden zuvor gelöscht. (default)
+- die Konfiguration des bestehenden Blogs wird überschrieben. 
+In beiden Fällen wird ein vorkonfiguriertes Theme und ggf. einige dazugehörige Plugins installiert.
+
+Auf einer Zweiten Eintsellungsseite steht eine Auswahl von Plugins zur Verfügung, die die Nutzer aktivieren können.  
+
 Screenshots
 ---------------------
  
