@@ -353,3 +353,71 @@ if ( class_exists( 'RW_Blog_Wizard' ) ) {
     register_deactivation_hook( __FILE__, array( 'RW_Blog_Wizard_Installation', 'on_deactivation' ) );
 }
 
+/*
+ * Single Site Dashboard Widget
+ */
+add_action('wp_dashboard_setup', 'wpse_54742_wp_dashboard_setup');
+
+function wpse_54742_wp_dashboard_setup() {
+    wp_add_dashboard_widget( 'wpse_54742_active_site_plugins', __( 'Active Plugins' ), 'wpse_54742_active_site_plugins' );
+}
+
+function wpse_54742_active_site_plugins() {
+    $the_plugs = get_option('active_plugins');
+    echo '<ul>';
+    foreach($the_plugs as $key => $value) {
+        $string = explode('/',$value); // Folder name will be displayed
+        echo '<li>'.$string[0] .'</li>';
+    }
+    echo '</ul>';
+}
+
+
+/*
+ * Multisite Dashboard Widget
+ */
+add_action('wp_network_dashboard_setup', 'wpse_54742_network_dashboard_setup');
+
+function wpse_54742_network_dashboard_setup() {
+    wp_add_dashboard_widget( 'wpse_54742_active_network_plugins', __( 'Network Active Plugins' ), 'wpse_54742_active_network_plugins' );
+}
+
+function wpse_54742_active_network_plugins() {
+    /*
+     * Network Activated Plugins
+     */
+    $the_plugs = get_site_option('active_sitewide_plugins');
+    echo '<h3>NETWORK ACTIVATED</h3><ul>';
+    foreach($the_plugs as $key => $value) {
+        $string = explode('/',$key); // Folder name will be displayed
+        echo '<li>'.$string[0] .'</li>';
+    }
+    echo '</ul>';
+
+
+    /*
+     * Iterate Through All Sites
+     */
+    global $wpdb;
+    $blogs = $wpdb->get_results($wpdb->prepare("
+        SELECT blog_id
+        FROM {$wpdb->blogs}
+        WHERE site_id = '{$wpdb->siteid}'
+        AND spam = '0'
+        AND deleted = '0'
+        AND archived = '0'
+    "));
+
+    echo '<h3>ALL SITES</h3>';
+
+    foreach ($blogs as $blog) {
+        $the_plugs = get_blog_option($blog->blog_id, 'active_plugins');
+        echo '<hr /><h4><strong>SITE</strong>: '. get_blog_option($blog->blog_id, 'blogname') .'</h4>';
+        echo '<ul>';
+        foreach($the_plugs as $key => $value) {
+            $string = explode('/',$value); // Folder name will be displayed
+            echo '<li>'.$string[0] .'</li>';
+        }
+        echo '</ul>';
+    }
+}

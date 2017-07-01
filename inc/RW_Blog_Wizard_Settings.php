@@ -24,10 +24,10 @@ class RW_Blog_Wizard_Settings {
      */
     static public function register_settings() {
 
-        register_setting( 'rw_blog_wizard_options', 'rw_blog_wizard_type' );
-        register_setting( 'rw_blog_wizard_options', 'rw_blog_wizard_plugins' );
-        register_setting( 'rw_blog_wizard_options', 'rw_blog_wizard_options' );
 
+
+        register_setting( 'rw_blog_wizard_options', 'rw_blog_wizard_type' );
+        self::set_blog_type();
     }
     /**
      * save all network settings
@@ -53,7 +53,7 @@ class RW_Blog_Wizard_Settings {
 
             $new_blog  = str_replace('template-','', $new_blog);
 
-            $slug = 'template-' . preg_replace('[^a-z0-9-]','',$new_blog);
+            $slug = strtolower('template-' . preg_replace('[^a-z0-9-]','',$new_blog) );
 
             $path = '/'.$slug.'/';
 
@@ -81,19 +81,7 @@ class RW_Blog_Wizard_Settings {
         exit;
 
 
-        $options = array(
-            'rw_blog_wizard_type',
-            'rw_blog_wizard_plugins',
-            'rw_blog_wizard_options'
-        );
 
-        foreach($options as $option){
-            if( isset( $_POST[ $option ] ) ) {
-                update_site_option( $option, ( $_POST[$option ] ) );
-            }else{
-                delete_site_option( $option );
-            }
-        }
 
 
 
@@ -157,7 +145,33 @@ class RW_Blog_Wizard_Settings {
      * @return  string
      */
     static public function get_blog_type() {
-        return get_site_option( 'rw_blog_wizard_type', 'Blog' );
+
+        return get_option( 'rw_blog_wizard_type' );
+    }
+
+    static public function add_blog_template_form() {
+
+        if(is_network_admin()):?>
+
+            <form method="POST" action="<?php echo admin_url('admin-post.php?action=rw_blog_wizard_network_settings') ?>">
+                <h2>Vorlage für neue Websites erstellen</h2>
+                <table>
+                    <tr>
+                        <td>Name</td>
+                        <td>
+                            <input name="new-blog-type" value="" placeholder="Neuer Blog Typ">
+                            <br>
+                            <span>Gib eine kurze und aussgekräftige Bezeichnung für den neuen Bblog Typ an</span>
+                            <?php  wp_nonce_field('rw_blog_wizard_network_settings'); ?>
+                        </td>
+
+                    </tr>
+                </table>
+                <input type="submit" class="button-primary" value="<?php _e('Add Blog' )?>" />
+            </form>
+            <hr>
+        <?php endif;
+
     }
 
     /**
@@ -169,7 +183,8 @@ class RW_Blog_Wizard_Settings {
      * @return  void
      */
 
-    static public function get_template_description($blog_id) {
+
+    static public function get_template_description($blog_id, $checked) {
 
         global $switched;
 
@@ -214,35 +229,17 @@ class RW_Blog_Wizard_Settings {
 
         restore_current_blog(); //switched back to main site
 
+
+        $info = $checked?'<br><br><span>Aktuelle Konfiguration<span>':'';
+
+
         return '
-            <table style="margin:0; padding: 0">
-                <tr>
-                    <td class="thumbnail">'.$thumb.'</td>
-                    <td>'.do_shortcode( $content, true) .'<p>'.$edit_link.'</p></td>
-                </tr>
-            </table>
-       
+        <td><label for="blog-'.$blog_id.'"><b style="font-size: 3em">'. $blog_name . '</b>'.$info.'</label></td>
+        <td class="thumbnail"><label for="blog-'.$blog_id.'">'.$thumb.'</label></td>
+        <td><label for="blog-'.$blog_id.'">'.do_shortcode( $content, true) .'<p>'.$edit_link.'</p></label></td>
         ';
     }
 
-    static public function add_blog_template_form() {
-        if(is_network_admin()){?>
-            <h2>Vorlage für neue Websites erstellen</h2>
-                    <table>
-                        <tr>
-                            <td>Name</td>
-                            <td>
-                                <input name="new-blog-type" value="" placeholder="Neuer Blog Typ">
-                                <br>
-                                <span>Gib eine kurze und aussgekräftige Bezeichnung für den neuen Bblog Typ an</span>
-                            </td>
-
-                        </tr>
-                    </table>
-                    <input type="submit" class="button-primary" value="<?php _e('Add Blog' )?>" />
-                    <hr>
-        <?php }
-    }
 
     /**
      * Returns a list of Blog-Types
@@ -262,27 +259,91 @@ class RW_Blog_Wizard_Settings {
         ));
 
 
-        $select_options = '<h2>Vorlage erstellen</h2><table class="rw-blog-types">';
+        $select_options = '
+                <style>tr.checked td{ background-color: #fff; }</style>
+                <table class="rw-blog-types" style="width:100%">
+                <tr>
+                    <th>&nbsp;</th>
+                    <th colspan="2"><b style="font-size: 1.8em">Typ</b></th>
+                    <th><b style="font-size: 1.8em">Wozu sich dieser Typ besonders eignet</b></th>
+                </tr>
+                <tr>
+                    <td colspan="4" style="border-top: 2px solid darkgray "></td>    
+                </tr>
+                ';
 
         $blog_type = self::get_blog_type();
 
         foreach ($blog_list AS $blog) {
             $blog_id = get_object_vars($blog)["blog_id"];
             $blog_name = get_blog_details($blog_id)->blogname;
-            $checked = ($blog_type == $blog_name )? 'checked': '';
+            $path = str_replace('/','',get_blog_details($blog_id)->path);
+            $slug = strtolower(str_replace('template-','', $path));
+            $checked = ($blog_type == $slug )? 'checked': '';
 
 
-            $select_options .= '<tr>';
+            $select_options .= '<tr class="'.$checked.'">';
             if(!$network){
-                $select_options .= '<td><input type="radio" value="'.$blog_id.'" id="blog-'.$blog_id.'" name="blogtype" '.$checked.'></td>';
+                $select_options .= '<td><input type="radio" value="'.$slug.'" id="blog-'.$blog_id.'" name="rw_blog_wizard_type" '.$checked.'></td>';
+            }else{
+                $select_options .= '<td></td>';
             }
-            $select_options .= '<td><b style="font-size: 3em">'. $blog_name.'</b></td>';
-            $select_options .= '<td style="margin:0; padding: 0"><label for="blog-'.$blog_id.'">'.self::get_template_description($blog_id).'</label></td></tr>';
+            $select_options .= self::get_template_description($blog_id, $checked?true:false );
+            $select_options .= '</tr>';
         }
-        $select_options .= '<table>';
+        $select_options .= '
+                <tr>
+                    <td colspan="4" style="border-bottom: 2px solid darkgray "></td>    
+                </tr>
+            <table>';
 
 
-        echo  $select_options;
+        ?>
+            <form method="POST" action="options.php">
+                <fieldset class="widefat">
+                    <?php settings_fields( 'rw_blog_wizard_options' )?>
+                    <?php do_settings_sections( 'rw_blog_wizard_options' ); ?>
+                    <?php echo $select_options; ?>
+                </fieldset>
+                <input type="submit" class="button-primary" name="rw-blog-reset" value="Webseite formatieren und installieren" title="Alle Inhalte gehen verloren" /> &nbsp;
+                <input type="submit" class="button-secondary" name="rw-blog-config" value="Nur die Konfiguration ändern" title="Inhalte werden nicht gelöscht." /> &nbsp;
+                <button class="button" onclick="location.href='?'">Abbrechen</button>
+           </form>
+        <?php
+    }
+
+
+    static public function set_blog_type(){
+
+        if(!current_user_can('manage_options')) wp_die('FU');
+
+        $blog_type = isset($_POST['rw_blog_wizard_type'])? trim($_POST['rw_blog_wizard_type']):false ;
+        $path = '/template-'. $blog_type.'/';
+
+        if( isset( $_POST[ 'rw_blog_wizard_type' ] )  ) {
+
+            $template_blogs =  get_sites(array( 'path' => $path ));
+
+            if(count($template_blogs)==1){
+                $template_blog = $template_blogs[0];
+            }
+
+            if(!$template_blog){
+                var_dump( new WP_Error('rw-wizzard-clone-error', 'Die Vorlage konte nicht ermittelt werden. Es wurden keine Änderungen vorgenommen.', $_POST[ 'rw_blog_wizard_type' ] ) );
+                die();
+            }
+
+
+            if(isset( $_POST[ 'rw-blog-reset' ] )  && $template_blog->blog_id > 0 ){
+
+                RW_Blog_Wizard_Core::clone_blog($template_blog->blog_id ,get_current_blog_id(), true);
+
+            }elseif(isset( $_POST[ 'rw-blog-config' ] )){
+                RW_Blog_Wizard_Core::clone_blog($template_blog->blog_id ,get_current_blog_id());
+            }
+        }
+
+
     }
 
     /**
@@ -302,23 +363,38 @@ class RW_Blog_Wizard_Settings {
 
             add_submenu_page(
                 'settings.php',
-                'Blog Wizard',
-                __('Blog Wizard', RW_Blog_Wizard::$textdomain),
+                'Einrichtiungshilfe',
+                'Einrichtiungshilfe',
                 'manage_network_options',
                 RW_Blog_Wizard::$plugin_base_name,
                 array('RW_Blog_Wizard_Settings', 'create_options')
             );
 
+            add_submenu_page(
+                'settings.php',
+                'Erweiterungen',
+                'Erweiterungen',
+                'manage_network_options',
+                'erweiterungen',
+                array('RW_Blog_Wizard_Settings', 'plugin_options')
+            );
+
         }
 
         add_options_page(
-            'Blog Wizard',
-            __('Blog Wizard', RW_Blog_Wizard::$textdomain ),
+            'Einrichtiungshilfe',
+            'Einrichtiungshilfe',
             'manage_options',
             RW_Blog_Wizard::$plugin_base_name,
             array( 'RW_Blog_Wizard_Settings', 'create_options' )
         );
-
+        add_options_page(
+            'Erweiterungen',
+            'Erweiterungen',
+            'manage_options',
+            RW_Blog_Wizard::$plugin_base_name,
+            array( 'RW_Blog_Wizard_Settings', 'plugin_options' )
+        );
 
 
 
@@ -335,48 +411,95 @@ class RW_Blog_Wizard_Settings {
      * @return  void
      */
     static public function create_options() {
-        if(is_network_admin()){
-            $description = __( 'Preconfigured websites for different requirements and projects', RW_Blog_Wizard::$textdomain );
-
-        }else{
-            $description = 'Wofür möchtest du neue Seite nutzen? <br>Wähle aus den folgenden Beschreibungen eine aus, die am ehesten deinen Zwecken entsprechen wird. <br>Anschließend klicke auf "Änderungen übernehmen". Deine Webseite wird dann entsprechend deiner Auswahl vorkonfiguriert und du kannst sofot loslegen.';
-        }
-
-
-        if(is_multisite()){
-            $form_action = admin_url('admin-post.php?action=rw_blog_wizard_network_settings');
-        }else{
-            $form_action = 'options.php';
-        }
 
         if ( !current_user_can( 'manage_options' ) )  {
             wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
         }
-
-
         ?>
         <div class="wrap"  id="rw_blog_wizard_main_settings">
-            <h2><?php _e( 'Blog Wizard ', RW_Blog_Wizard::$textdomain ); ?><?php echo ( is_network_admin() ) ? __( 'Create Templates'):'';?></h2>
-            <p><?php echo $description ?></p>
-            <form method="POST" action="<?php echo $form_action; ?>"><fieldset class="widefat">
+            <h2>Einrichtungshilfe</h2>
+            <?php  if(is_network_admin()): ?>
+                <h1>Vorkonfigurierte Webseiten</h1>
+                <p>Hier kannst du weitere Vorlagen generien, die als Kopiervorlage für User dienen, die Ihr blog neu erstellen wollen.</p>
+            <?php else: ?>
+                <?php if(get_option('rw_blog_wizard_type')):?>
+                    <h2>Alles Zurücksetzen: Webseite neu installieren</h2>
+                    <div class="notice error">
+                        <p>
+                            Du hast deine Webseite bereits mit der Einrichtungshilfe konfiguriert!<br>
+                            Du kannst hier erneut <strong>alle deine Einstellungen und Inhalte löschen und</strong> deine Website <strong>mit neuen Einstellungen aufsetzen</strong>.
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <h2>Wähle einen geeigneten Typ für deine Webseite</h2>
+                <?php endif; ?>
+                <p>
+                    Wofür möchtest du deine Seite nutzen? <br>
+                    Wähle aus den folgenden Beschreibungen eine aus, die am ehesten deinen Zwecken entsprechen wird. <br>
+                    Anschließend klicke auf "Änderungen übernehmen". Deine Webseite wird dann entsprechend deiner Auswahl konfiguriert und du kannst loslegen.
+                </p>
 
+            <?php endif; ?>
+            <hr />
+            <?php self::add_blog_template_form();?>
+            <?php self::blog_template_list();?>
 
-
-                    <?php
-                    if(is_multisite()){
-                        wp_nonce_field('rw_blog_wizard_network_settings');
-
-                    }else{
-                        settings_fields( 'rw_blog_wizard_options' );
-                    }
-                    ?>
-                    <?php self::add_blog_template_form();?>
-                    <?php self::blog_template_list();?>
-
-            </form>
         </div>
         <?php
     }
 
 
+    static public function plugin_options(){
+        if ( !current_user_can( 'manage_options' ) )  {
+            wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
+        }
+        $the_plugs = get_site_option('active_sitewide_plugins');
+        ?>
+        <div class="wrap"  id="rw_blog_wizard_main_settings">
+
+            <h2>Erweiterungen</h2>
+
+            <table class="form-table">
+
+                <?php
+
+                $network_activated_plugins=array();
+                foreach($the_plugs as $key => $value) {
+                    $network_activated_plugins[] = $key;
+                }
+
+
+                $all_plugins = get_plugins();
+                foreach($all_plugins as $plugin_file=>$plugin_obj){
+                    if(!in_array($plugin_file, $network_activated_plugins)):?>
+                    <form>
+                        <tr>
+                            <td><?php echo $plugin_obj['Title']; ?><br><?php echo $plugin_file; ?></td>
+                            <td style="width:40%">
+                                <textarea style="width:100%" name="description"><?php echo $plugin_obj['Description']; ?></textarea>
+                            </td>
+                            <td style="width:20%">
+                                <textarea style="width:100%" name="required_plugins" placeholder="zusätzliche plugins installieren (eines pro Zeile: dir/file.php)"></textarea>
+                            </td>
+
+                            <td>
+                                <select name="group">
+                                    <option value="seo">SEO</option>
+                                    <option value="content">Content</option>
+                                </select>
+                            </td>
+                            <td><input type="checkbox" name="allowed">freischalten</td>
+                            <td>
+                                <input type="hidden" name="plugin-file" value="<?php echo $plugin_file;?>">
+                                <input type="submit" value="Speichern">
+                            </td>
+                        </tr>
+                    <form>
+                    <?php endif;
+                }
+                ?>
+            </table>
+        </div>
+        <?php
+    }
 }

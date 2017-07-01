@@ -100,9 +100,19 @@ class RW_Blog_Wizard_Core {
 
      */
 
-    public static function clone_blog( $clone_from_blog_id, $clone_to_blog_id ){
+    public static function clone_blog( $clone_from_blog_id, $clone_to_blog_id , $overwrite = false ){
 
-        $clone_to_blog_id = get_current_blog_id();
+        $clone_from_blog_id = intval($clone_from_blog_id);
+        $clone_to_blog_id = intval($clone_to_blog_id);
+
+        if( $clone_from_blog_id == 0 || $clone_from_blog_id == 0 || $clone_from_blog_id == $clone_to_blog_id ){
+
+            die('wp_clone_error');
+
+            return new WP_Error('wp_clone_error', 'Nicht zulässige Auswahl');
+
+        }
+
         global $wpdb;
 
         //the table prefix for the blog we want to clone
@@ -118,6 +128,7 @@ class RW_Blog_Wizard_Core {
 
         //the options that we don't want to alter on the target blog
         //we will preserve the values for these in the options table of newly created blog
+
         $excluded_options = array(
 
             'siteurl',
@@ -127,9 +138,16 @@ class RW_Blog_Wizard_Core {
             'admin_email',
             'upload_path',
             'upload_url_path',
+            'rw_blog_wizard_type_setted',
+            'rw_blog_wizard_type',
             $new_table_prefix.'user_roles' //preserve the roles
             //add your on keys to preserve here
         );
+        if($overwrite === false){
+            $excluded_options[] = 'nav_menu_options';
+        }
+
+
 
         //should we? I don't see any reason to do it, just to avoid any glitch
         $excluded_options = esc_sql( $excluded_options );
@@ -151,20 +169,25 @@ class RW_Blog_Wizard_Core {
 
         //we have got the data which we need to update again later
 
-        //now for each table, let us clone
-        foreach( $tables as $table ){
+        if($overwrite === true){
+            //now for each table, let us clone
+            foreach( $tables as $table ){
 
-            //drop table
-            //clone table
-            $query_drop = "DROP TABLE {$new_table_prefix}{$table}";
+                //drop table
+                //clone table
+                $query_drop = "DROP TABLE {$new_table_prefix}{$table}";
 
-            $query_copy = "CREATE TABLE {$new_table_prefix}{$table} AS (SELECT * FROM {$old_table_prefix}{$table})" ;
-            //drop table
-            $wpdb->query( $query_drop );
-            //clone table
-            $wpdb->query( $query_copy );
+                $query_copy = "CREATE TABLE {$new_table_prefix}{$table} AS (SELECT * FROM {$old_table_prefix}{$table})" ;
 
+                //drop table
+                $wpdb->query( $query_drop );
+                //clone table
+
+                $wpdb->query( $query_copy );
+
+            }
         }
+
 
         //update the preserved options to the options table of the clonned blog
         foreach( (array) $excluded_options_data as $excluded_option ){
