@@ -31,7 +31,36 @@ class RW_Blog_Wizard_Core {
      */
     public static function init() {
 
+        $args = array(
+            'labels'             => 'Plugins',
+            'has_archive' => false,
+            'public' => false
+        );
 
+
+        register_post_type( 'rw-plugin' , $args);
+
+
+        $args = array(
+            'labels'             => array(
+                'name'=>'Plugin Gruppen',
+                'singular_name'=>'Plugin Gruppe',
+            ),
+            'has_archive' => false,
+            'public' => true,
+            'show_ui'            => true,
+            'show_in_menu'       => true,
+            'query_var'          => true,
+            'rewrite'            => array( 'slug' => 'book' ),
+            'capability_type'    => false,
+            'has_archive'        => true,
+            'hierarchical'       => false,
+            'menu_position'      => null,
+            'supports'           => array( 'title', 'editor', 'thumbnail' )
+        );
+
+
+        register_post_type( 'rw-plugingroup' , $args);
 
     }
 

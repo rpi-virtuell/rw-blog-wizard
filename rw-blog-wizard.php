@@ -162,6 +162,10 @@ class RW_Blog_Wizard {
 
         add_action( 'admin_post_rw_blog_wizard_network_settings',
                                                  array( 'RW_Blog_Wizard_Settings', 'network_settings' ) );
+        add_action( 'admin_post_rw_blog_wizard_plugin_options_action',
+                                                 array( 'RW_Blog_Wizard_Settings', 'plugin_options_action' ) );
+        add_action( 'admin_post_rw_blog_wizard_activate_selected_plugin_bundle',
+                                                 array( 'RW_Blog_Wizard_Settings', 'activate_selected_plugin_bundle' ) );
         add_action( 'admin_init',                array( 'RW_Blog_Wizard_Settings', 'register_settings' ) );
         add_action( 'admin_menu',                array( 'RW_Blog_Wizard_Settings', 'options_menu' ) );
         add_action( 'network_admin_menu',        array( 'RW_Blog_Wizard_Settings', 'options_menu' ) );
@@ -209,8 +213,7 @@ class RW_Blog_Wizard {
      * @since	0.0.1
      * @access	public
      * @uses	load_plugin_textdomain, plugin_basename
-     * @filters @TODO rw_sticky_activity_translationpath path to translations files
-     * @return	void
+      * @return	void
      */
     public function load_plugin_textdomain() {
         load_plugin_textdomain( self::get_textdomain(), false, apply_filters ( 'rw_blog_wizard_domain', dirname( plugin_basename( __FILE__ )) .  self::get_textdomain_path() ) );

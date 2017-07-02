@@ -24,8 +24,6 @@ class RW_Blog_Wizard_Settings {
      */
     static public function register_settings() {
 
-
-
         register_setting( 'rw_blog_wizard_options', 'rw_blog_wizard_type' );
         self::set_blog_type();
     }
@@ -392,8 +390,8 @@ class RW_Blog_Wizard_Settings {
             'Erweiterungen',
             'Erweiterungen',
             'manage_options',
-            RW_Blog_Wizard::$plugin_base_name,
-            array( 'RW_Blog_Wizard_Settings', 'plugin_options' )
+            'plugins',
+            array( 'RW_Blog_Wizard_Settings', 'plugin_selector' )
         );
 
 
@@ -402,7 +400,7 @@ class RW_Blog_Wizard_Settings {
 
 
     /**
-     * Generate the options page for the plugin
+     * Displays the settings page "Einrichtungshilfe"
      *
      * @since   0.1
      * @access  public
@@ -448,12 +446,55 @@ class RW_Blog_Wizard_Settings {
         <?php
     }
 
+    /**
+     * Display all Plugins in single Forms, so you can change the description and create plugin bundles
+     * @since   0.1
+     * @access  public
+     * @static
+     *
+     */
 
     static public function plugin_options(){
         if ( !current_user_can( 'manage_options' ) )  {
             wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
         }
         $the_plugs = get_site_option('active_sitewide_plugins');
+
+             $posts = get_posts(array(
+            'post_type'=>'rw-plugin',
+            'post_status'=>'any'
+        ));
+        $sub_plugs=$group_options=array();
+        foreach ($posts as $p){
+            $plugins[$p->post_title] = $p;
+            $sub_plugs = array_merge($sub_plugs, explode("\n",$p->post_excerpt));
+        }
+
+        $group_options = get_posts(array(
+            'post_type' => 'rw-plugingroup',
+            'post_status' => 'any'
+        ));
+
+
+
+        $network_activated_plugins=array();
+        foreach($the_plugs as $key => $value) {
+            $network_activated_plugins[] = $key;
+        }
+        $network_activated_plugins = array_merge($sub_plugs,$network_activated_plugins);
+
+        foreach($network_activated_plugins as $key=>$value){
+            if (empty($value)){
+                unset($network_activated_plugins[$key]);
+            }else{
+                $network_activated_plugins[$key] =  trim($value);
+            }
+        }
+        //echo '<pre>'; var_dump($network_activated_plugins); echo '</pre>';
+        //echo '<pre>'; var_dump($group_options); echo '</pre>';
+
+        $all_plugins = get_plugins();
+
         ?>
         <div class="wrap"  id="rw_blog_wizard_main_settings">
 
@@ -463,43 +504,344 @@ class RW_Blog_Wizard_Settings {
 
                 <?php
 
-                $network_activated_plugins=array();
-                foreach($the_plugs as $key => $value) {
-                    $network_activated_plugins[] = $key;
-                }
 
-
-                $all_plugins = get_plugins();
                 foreach($all_plugins as $plugin_file=>$plugin_obj){
-                    if(!in_array($plugin_file, $network_activated_plugins)):?>
-                    <form>
-                        <tr>
-                            <td><?php echo $plugin_obj['Title']; ?><br><?php echo $plugin_file; ?></td>
-                            <td style="width:40%">
-                                <textarea style="width:100%" name="description"><?php echo $plugin_obj['Description']; ?></textarea>
-                            </td>
-                            <td style="width:20%">
-                                <textarea style="width:100%" name="required_plugins" placeholder="zusätzliche plugins installieren (eines pro Zeile: dir/file.php)"></textarea>
-                            </td>
+                    //echo '<pre>'; var_dump($plugin_obj); echo '</pre>';
+                    if(!in_array($plugin_file, $network_activated_plugins)):
 
-                            <td>
-                                <select name="group">
-                                    <option value="seo">SEO</option>
-                                    <option value="content">Content</option>
-                                </select>
-                            </td>
-                            <td><input type="checkbox" name="allowed">freischalten</td>
-                            <td>
-                                <input type="hidden" name="plugin-file" value="<?php echo $plugin_file;?>">
-                                <input type="submit" value="Speichern">
-                            </td>
-                        </tr>
-                    <form>
+                        if(isset($plugins[$plugin_file])){
+
+                            $p = $plugins[$plugin_file];
+                            $description = $p->post_content;
+                            $plugin_url = get_post_meta($p->ID,'plugin_url',true);
+                            $plugin_url = ($plugin_url)?$plugin_url:$plugin_obj['PluginURI'];
+                            $plugin_title = $p->post_content_filtered;
+                            $plugin_title = ($plugin_title)?$plugin_title:$plugin_obj['Title'];
+                            $required_plugins = $p->post_excerpt;
+                            $options='';
+                            foreach ($group_options as $go){
+                                $plugin_group_id =  $go->ID;
+                                $group_id = get_post_meta($p->ID,'plugin_group_id',true);
+
+                                $selected = (intval($plugin_group_id) === intval($group_id))?'selected':'';
+                                $options.='<option value="'.$go->ID.'" '.$selected.'>'.$go->post_title.'</option>';
+                            }
+                            $checked = $p->post_status=='publish'?'checked':'';
+                        }else{
+                            $plugin_url = $plugin_obj['PluginURI'];
+                            $plugin_title = $plugin_obj['Title'];
+                            $description = $plugin_obj['Description'];
+                            $required_plugins = '';
+                            $options='';
+                            foreach ($group_options as $go){
+                                $options.='<option value="'.$go->ID.'">'.$go->post_title.'</option>';
+                            }
+                            $checked = '';
+                        }
+
+
+
+
+                        ?>
+                        <form method="post" action="<?php echo admin_url('admin-post.php?action=rw_blog_wizard_plugin_options_action') ?>">
+                            <tr>
+                                <td><strong style="font-size:1.2em"><?php echo $plugin_title; ?></strong>
+                                    <br>
+                                    <?php echo $plugin_file; ?>
+                                    <br>
+                                    <input type="text" name="plugin-title" value="<?php echo $plugin_title; ?>">
+                                </td>
+                                <td style="width:40%">
+                                    <textarea style="width:100%" name="description"><?php echo $description; ?></textarea>
+                                    <input  type="text" name="url" value="<?php echo $plugin_url; ?>" style="width:100%">
+                                </td>
+                                <td style="width:20%">
+                                    <textarea style="width:100%; height:80px" name="required_plugins" placeholder="Gemeinsam mit folgenden Plugins installieren (eines pro Zeile: dir/file.php)"><?php echo $required_plugins;?></textarea>
+                                </td>
+
+                                <td>
+                                    <select name="rw-group" style="width:150px">
+                                        <option></option>
+                                        <?php echo $options ?>
+                                    </select><br>
+                                    <input  type="text" placeholder="Neue Kategorie" name="new-group" style="width:150px">
+                                </td>
+                                <td><input type="checkbox" name="allowed" <?php echo $checked; ?>>freischalten</td>
+                                <td>
+                                    <input type="hidden" name="plugin-file" value="<?php echo $plugin_file;?>">
+                                    <input type="hidden" name="plugin-author" value="<?php echo $plugin_obj['AuthorName']; ?>">
+                                    <?php  wp_nonce_field('rw_blog_wizard_plugin_options_action'); ?>
+                                    <input type="submit" value="Speichern">
+                                </td>
+                            </tr>
+                        </form>
                     <?php endif;
                 }
+
+                //echo '<pre>'; var_dump($plugin_obj); echo '</pre>';
+
+                $p = get_page_by_title('rw-hidden-plugins',OBJECT, 'rw-plugin');
+                if($p){
+                    $required_plugins = $p->post_excerpt;
+
+                }else{
+                    $required_plugins = '';
+                }
                 ?>
+                <form method="post" action="<?php echo admin_url('admin-post.php?action=rw_blog_wizard_plugin_options_action') ?>">
+                    <tr>
+                        <td><strong style="font-size:1.2em">Verborgene Plugins</strong><br>Ein Plugin pro Zeile</td>
+                        <td><strong>Diese Plugins sollen in der Auswahlliste nicht angezeigt werden:</strong></td>
+                        <td>
+                            <textarea style="width:100%; height:150px" name="required_plugins" placeholder="(pro Zeile: dir/file.php)"><?php echo $required_plugins;?></textarea>
+                        </td>
+                        <td colspan="2"></td>
+                        <td>
+                            <input type="hidden" name="plugin-file" value="rw-hidden-plugins">
+                            <input type="hidden" name="description" value="Diese Plugins werden in der Auswahlliste nicht angezeigt">
+                            <input type="hidden" name="plugin-title" value="Verborgene Plugins">
+                            <?php  wp_nonce_field('rw_blog_wizard_plugin_options_action'); ?>
+                            <input type="submit" value="Speichern">
+
+                        </td>
+                    </tr>
+                </form>
             </table>
         </div>
         <?php
+    } // end function plugin_options
+
+
+    /**
+     * saves custom plugin description and plugin groups in custom post types
+     *
+     * @since   0.1
+     * @access  public
+     * @static
+     * @useaction hook admin_post_rw_blog_wizard_plugin_options_action
+     */
+    static public function plugin_options_action(){
+
+        check_admin_referer('rw_blog_wizard_plugin_options_action');
+
+        if(!current_user_can('manage_network_options')) wp_die('FU');
+
+        $post = get_page_by_title($_POST['plugin-file'],OBJECT, 'rw-plugin');
+
+
+        if(!empty(trim($_POST['new-group']))){
+            $group_name = trim($_POST['new-group']);
+            $group = sanitize_title($group_name);
+            $group_id = false;
+        }else{
+            $group_id = $_POST['rw-group'];
+        }
+
+
+        if(intval($group_id) === 0){
+            $groups = get_posts(array(
+                    'title' => $group_name ,
+                    'post_type' => 'rw-plugingroup',
+                    'posts_per_page' => 1)
+            );
+
+            if(count($groups)>0){
+                $plugin_group = $groups[0];
+                $group_id = $plugin_group->ID;
+            }else{
+                $group_id = wp_insert_post(array(
+                    'post_title'   => $group_name,
+                    'post_name'   => $group,
+                    'post_type' => 'rw-plugingroup',
+                    'post_status' => 'publish'
+                ));
+            }
+        }
+
+        if($post!==null){
+            wp_update_post(array(
+                'ID'           => $post->ID,
+                'post_content'  => $_POST['description'],
+                'post_content_filtered'  => $_POST['plugin-title'],
+                'post_status'   => $_POST['allowed']?'publish':'private',
+                'post_excerpt'   => $_POST['required_plugins'],
+                'post_mime_type' => Null,
+                'post_password' => Null,
+                'meta_input' => array(
+                    'plugin_url' => isset($_POST['url'])?$_POST['url']:Null,
+                    'plugin_author' =>isset( $_POST['plugin-author'])? $_POST['plugin-author']:Null,
+                    'plugin_group_id' =>$group_id
+                ),
+            ));
+        }else{
+            $postid = wp_insert_post( array(
+                'post_title'    => $_POST['plugin-file'],
+                'post_content_filtered'  => $_POST['plugin-title'],
+                'post_content'  => $_POST['description']?$_POST['description']:'',
+                'post_status'   => $_POST['allowed']?'publish':'private',
+                'post_excerpt'   => $_POST['required_plugins'],
+                'post_mime_type' => Null,
+                'post_password' => Null,
+                'meta_input' => array(
+                    'plugin_url' => isset($_POST['url'])?$_POST['url']:Null,
+                    'plugin_author' =>isset( $_POST['plugin-author'])? $_POST['plugin-author']:Null,
+                    'plugin_group_id' =>$group_id
+                ),
+                'post_type'   => 'rw-plugin'
+            ));
+        }// end if
+
+
+
+
+        /*
+        //automatic dlete unused plugin groups
+        $groups = get_posts(array(
+            'post_type' => 'rw-plugingroup',
+            'post_status' => 'any'
+        ));
+
+        foreach ($groups as $g){
+            $plugns = get_posts(array(
+                'meta_key' => 'plugin_group_id',
+                'meta_value' => $g->ID,
+                'post_type' => 'rw-plugin',
+                'post_status' => 'any'
+            ));
+
+            if(count($plugns)<1){
+                //var_dump('delete: '.$g->ID );
+                wp_delete_post( $g->ID );
+            }
+        }
+        //
+        */
+
+        wp_redirect(admin_url('network/settings.php?page=erweiterungen'));
+        exit;
+
+
+
+
+    }// end function plugin_options_action
+
+
+    /**
+     * @todo Aktivieren Button
+     */
+    static public function plugin_selector(){
+        global $switched;
+        switch_to_blog(1);
+
+        if ( !current_user_can( 'manage_options' ) )  {
+            wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
+        }
+
+        $posts = get_posts(array(
+            'post_type'=>'rw-plugin',
+            'post_status'=>'publish'
+        ));
+        $plugins = $groups = array();
+
+        $groups = get_posts(array(
+            'post_type' => 'rw-plugingroup',
+            'post_status' => 'any'
+        ));
+
+
+        foreach ($posts as $p){
+            $group_id =  get_post_meta($p->ID,'plugin_group_id',true);
+            $plugins[$group_id][]=$p;
+        }
+
+
+        ?>
+        <div class="wrap"  id="rw_blog_wizard_main_settings">
+
+            <h2>Erweiterungen</h2>
+
+            <table class="form-table">
+
+                <?php
+                $nonce = wp_create_nonce( 'rw_blog_wizard_activate_selected_plugin_bundle' );
+                foreach($groups as $go):
+
+                    if(count($plugins[$go->ID])>0): ?>
+                        <table style="width:100%">
+                            <thead style="background-color:lavender">
+                                <tr>
+                                    <td style="width:120px"><img src="<?php echo get_the_post_thumbnail_url($go,array(100,100))?>"></td>
+                                    <td style="padding: 0 20px">
+                                        <h2><?php echo $go->post_title; ?></h2>
+                                        <?php echo $go->post_content; ?>
+                                    </td>
+                                </tr>
+                            </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="2">
+                                        <?php endif;
+                                        foreach ($plugins[$go->ID] as $plugin):
+                                            $meta = get_post_meta($plugin->ID);
+                                            ?>
+                                            <div style="float:left; width:400px; background-color: #fff; margin:10px 10px 0 0; padding:20px">
+                                                <h3><?php echo $plugin->post_content_filtered; ?></h3>
+                                                <p><?php echo $plugin->post_content; ?></p>
+                                                <p>Entwickler: <?php echo (isset($meta['plugin_author'][0])?$meta['plugin_author'][0]:''); ?></p>
+                                                <p><a href="<?php echo (isset($meta['plugin_url'][0])?$meta['plugin_url'][0]:''); ?>">Mehr über dieses Erweiterung ..</a></p>
+                                                <a href="<?php echo admin_url('admin-post.php?action=rw_blog_wizard_activate_selected_plugin_bundle&id='.$plugin->ID.'&_wpnonce='.$nonce); ?>"
+                                                   class="button button-primary"><?php esc_html_e('Activate');?></a>
+
+                                            </div>
+                                        <?php endforeach;?>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                <?php endforeach;?>
+
+            </table>
+
+        <?php
+        restore_current_blog();
+    }//end function plugin_selector
+
+    static function activate_selected_plugin_bundle()
+    {
+        check_admin_referer('rw_blog_wizard_activate_selected_plugin_bundle');
+
+        $plugin = get_post($_GET['id']);
+
+        $activate[] = $plugin->post_title;
+        $sub_plugs = explode("\n",$plugin->post_excerpt);
+        foreach ($sub_plugs as $p){
+            $activate[] = trim($p);
+        }
+
+        foreach ($activate as $plugin){
+            self::activate_plugin($plugin);
+        }
+        wp_redirect(admin_url('plugins.php'));
+    }
+
+    static function activate_plugin( $plugin ){
+
+
+
+        $current = get_option( 'active_plugins' );
+        $plugin = plugin_basename( trim( $plugin ) );
+
+        if ( !in_array( $plugin, $current ) ) {
+            $current[] = $plugin;
+            sort( $current );
+            do_action( 'activate_plugin', trim( $plugin ) );
+            update_option( 'active_plugins', $current );
+            do_action( 'activate_' . trim( $plugin ) );
+            do_action( 'activated_plugin', trim( $plugin) );
+        }
+
+        return null;
+
     }
 }
