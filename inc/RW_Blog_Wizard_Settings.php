@@ -410,6 +410,8 @@ class RW_Blog_Wizard_Settings {
      */
     static public function create_options() {
 
+
+
         if ( !current_user_can( 'manage_options' ) )  {
             wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
         }
@@ -446,6 +448,29 @@ class RW_Blog_Wizard_Settings {
         <?php
     }
 
+    static public function get_blog_plugins(){
+
+        $site_plugs = get_site_option('active_sitewide_plugins');
+        $plugs = array_keys($site_plugs);
+
+
+        $blog_plugs = get_option('active_plugins');
+        $active_plugins = array_merge($blog_plugs,  $plugs );
+
+        $plugins = array();
+
+        $all_plugins = get_plugins();
+        foreach ($all_plugins as $plugin=>$detai_arr){
+            $plugins[$plugin]='';
+        }
+
+        foreach ($active_plugins as $plugin){
+            $plugins[$plugin]='active';
+        }
+
+        return $plugins;
+    }
+
     /**
      * Display all Plugins in single Forms, so you can change the description and create plugin bundles
      * @since   0.1
@@ -460,7 +485,7 @@ class RW_Blog_Wizard_Settings {
         }
         $the_plugs = get_site_option('active_sitewide_plugins');
 
-             $posts = get_posts(array(
+        $posts = get_posts(array(
             'post_type'=>'rw-plugin',
             'post_status'=>'any'
         ));
@@ -754,6 +779,9 @@ class RW_Blog_Wizard_Settings {
             $plugins[$group_id][]=$p;
         }
 
+        $installed_plugins = self::get_blog_plugins();
+
+        $plug_array = array_keys($installed_plugins);
 
         ?>
         <div class="wrap"  id="rw_blog_wizard_main_settings">
@@ -777,29 +805,39 @@ class RW_Blog_Wizard_Settings {
                                     </td>
                                 </tr>
                             </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="2">
-                                        <?php endif;
-                                        foreach ($plugins[$go->ID] as $plugin):
-                                            $meta = get_post_meta($plugin->ID);
-                                            ?>
-                                            <div style="float:left; width:400px; background-color: #fff; margin:10px 10px 0 0; padding:20px">
-                                                <h3><?php echo $plugin->post_content_filtered; ?></h3>
-                                                <p><?php echo $plugin->post_content; ?></p>
-                                                <p>Entwickler: <?php echo (isset($meta['plugin_author'][0])?$meta['plugin_author'][0]:''); ?></p>
-                                                <p><a href="<?php echo (isset($meta['plugin_url'][0])?$meta['plugin_url'][0]:''); ?>">Mehr über dieses Erweiterung ..</a></p>
-                                                <a href="<?php echo admin_url('admin-post.php?action=rw_blog_wizard_activate_selected_plugin_bundle&id='.$plugin->ID.'&_wpnonce='.$nonce); ?>"
-                                                   class="button button-primary"><?php esc_html_e('Activate');?></a>
+                            <tbody>
+                                <tr>
+                                    <td colspan="2">
+                                        <?php
+                                            foreach ($plugins[$go->ID] as $plugin){
+                                                if(in_array($plugin->post_title, $plug_array)){
+                                                    $meta = get_post_meta($plugin->ID);
+                                                    $active = $installed_plugins[$plugin->post_title];
+                                                    ?>
+                                                    <div style="float:left; width:400px; background-color: #fff; margin:10px 10px 0 0; padding:20px">
+                                                        <h3><?php echo $plugin->post_content_filtered; ?></h3>
+                                                        <p><?php echo $plugin->post_content; ?></p>
+                                                        <p>Entwickler: <?php echo (isset($meta['plugin_author'][0])?$meta['plugin_author'][0]:''); ?></p>
+                                                        <p><a href="<?php echo (isset($meta['plugin_url'][0])?$meta['plugin_url'][0]:''); ?>">Mehr über dieses Erweiterung ..</a></p>
+                                                        <?php if(!$active):?>
+                                                            <a href="<?php echo admin_url('admin-post.php?action=rw_blog_wizard_activate_selected_plugin_bundle&id='.$plugin->ID.'&_wpnonce='.$nonce); ?>"
+                                                                class="button button-primary"><?php esc_html_e('Activate');?></a>
+                                                        <?php else:?>
+                                                            <a href="<?php echo admin_url('admin-post.php?action=rw_blog_wizard_activate_selected_plugin_bundle&id='.$plugin->ID.'&_wpnonce='.$nonce); ?>"
+                                                               class="button button-secondary"><?php esc_html_e('Deactivate');?></a>
+                                                        <?php endif?>
 
-                                            </div>
-                                        <?php endforeach;?>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                <?php endforeach;?>
+                                                    </div>
+                                                <?php
+                                                }
+                                            }
+                                        ?>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    <?php  endif;
+                 endforeach;?>
 
             </table>
 

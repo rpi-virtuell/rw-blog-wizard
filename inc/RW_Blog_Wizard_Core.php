@@ -32,9 +32,21 @@ class RW_Blog_Wizard_Core {
     public static function init() {
 
         $args = array(
-            'labels'             => 'Plugins',
+            'labels'             => array(
+                'name'=>'Extensions',
+                'singular_name'=>'Extension',
+            ),
             'has_archive' => false,
-            'public' => false
+            'public' => false,
+            'show_ui'            => true,
+            'show_in_menu'       => true,
+            'query_var'          => true,
+            'rewrite'            => array( 'slug' => 'ext' ),
+            'capability_type'    => false,
+            'has_archive'        => false,
+            'hierarchical'       => false,
+            'menu_position'      => 66,
+            'supports'           => array( 'title', 'editor', 'thumbnail' ,'custom-fields', 'excerpt')
         );
 
 
@@ -47,15 +59,15 @@ class RW_Blog_Wizard_Core {
                 'singular_name'=>'Plugin Gruppe',
             ),
             'has_archive' => false,
-            'public' => true,
+            'public' => false,
             'show_ui'            => true,
             'show_in_menu'       => true,
             'query_var'          => true,
-            'rewrite'            => array( 'slug' => 'book' ),
+            'rewrite'            => array( 'slug' => 'extgroup' ),
             'capability_type'    => false,
-            'has_archive'        => true,
+            'has_archive'        => false,
             'hierarchical'       => false,
-            'menu_position'      => null,
+            'menu_position'      => 67,
             'supports'           => array( 'title', 'editor', 'thumbnail' )
         );
 
