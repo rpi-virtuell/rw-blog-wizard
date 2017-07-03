@@ -31,48 +31,69 @@ class RW_Blog_Wizard_Core {
      */
     public static function init() {
 
-        $args = array(
-            'labels'             => array(
-                'name'=>'Extensions',
-                'singular_name'=>'Extension',
-            ),
-            'has_archive' => false,
-            'public' => false,
-            'show_ui'            => true,
-            'show_in_menu'       => true,
-            'query_var'          => true,
-            'rewrite'            => array( 'slug' => 'ext' ),
-            'capability_type'    => false,
-            'has_archive'        => false,
-            'hierarchical'       => false,
-            'menu_position'      => 66,
-            'supports'           => array( 'title', 'editor', 'thumbnail' ,'custom-fields', 'excerpt')
-        );
+        if(get_current_blog_id() == 1){
+            $p_args =  array(
+                'labels'             => array(
+                    'name'=>'Extensions',
+                    'singular_name'=>'Extension',
+                ),
+                'has_archive' => false,
+                'public' => false,
+                'show_ui'            => true,
+                'show_in_menu'       => true,
+                'query_var'          => true,
+                'rewrite'            => array( 'slug' => 'ext' ),
+                'capability_type'    => false,
+                'has_archive'        => false,
+                'hierarchical'       => false,
+                'menu_position'      => 66,
+                'supports'           => array( 'title', 'editor', 'thumbnail' ,'custom-fields', 'excerpt')
+            );
+            $ext_args = array(
+                'labels'             => array(
+                    'name'=>'Plugin Gruppen',
+                    'singular_name'=>'Plugin Gruppe',
+                ),
+                'has_archive' => false,
+                'public' => false,
+                'show_ui'            => true,
+                'show_in_menu'       => true,
+                'query_var'          => true,
+                'rewrite'            => array( 'slug' => 'extgroup' ),
+                'capability_type'    => false,
+                'has_archive'        => false,
+                'hierarchical'       => false,
+                'menu_position'      => 67,
+                'supports'           => array( 'title', 'editor', 'thumbnail' )
+            );
+        }else{
+            $p_args =  array(
+                'labels'             => 'Plugins',
+                'has_archive' => false,
+                'public' => false,
+                'show_ui'            => false,
+                'show_in_menu'       => false,
+                'query_var'          => false,
+                'has_archive'        => false,
+                'hierarchical'       => false
+            );
+            $ext_args =  array(
+                'labels'             => 'Plugingroups',
+                'has_archive' => false,
+                'public' => false,
+                'show_ui'            => false,
+                'show_in_menu'       => false,
+                'query_var'          => false,
+                'has_archive'        => false,
+                'hierarchical'       => false
+            );
+        }
 
 
-        register_post_type( 'rw-plugin' , $args);
 
 
-        $args = array(
-            'labels'             => array(
-                'name'=>'Plugin Gruppen',
-                'singular_name'=>'Plugin Gruppe',
-            ),
-            'has_archive' => false,
-            'public' => false,
-            'show_ui'            => true,
-            'show_in_menu'       => true,
-            'query_var'          => true,
-            'rewrite'            => array( 'slug' => 'extgroup' ),
-            'capability_type'    => false,
-            'has_archive'        => false,
-            'hierarchical'       => false,
-            'menu_position'      => 67,
-            'supports'           => array( 'title', 'editor', 'thumbnail' )
-        );
-
-
-        register_post_type( 'rw-plugingroup' , $args);
+        register_post_type( 'rw-plugin' , $p_args);
+        register_post_type( 'rw-plugingroup' , $ext_args);
 
     }
 
@@ -141,12 +162,20 @@ class RW_Blog_Wizard_Core {
 
      */
 
-    public static function clone_blog( $clone_from_blog_id, $clone_to_blog_id , $overwrite = false ){
+    public static function clone_blog( $clone_from_blog_id, $clone_to_blog_id , $type ){
 
         $clone_from_blog_id = intval($clone_from_blog_id);
         $clone_to_blog_id = intval($clone_to_blog_id);
 
-        if( $clone_from_blog_id == 0 || $clone_from_blog_id == 0 || $clone_from_blog_id == $clone_to_blog_id ){
+        $blogname = get_blog_details()->blogname;
+
+        $user_id = get_current_user_id();
+
+        if(!class_exists('MUCD_Duplicate')) {
+            wp_die("plugin multisite-clone-duplicator is not installed or activated");
+        }
+
+        if( $clone_from_blog_id == 0 || $clone_to_blog_id < 2 || $clone_from_blog_id == $clone_to_blog_id ){
 
             die('wp_clone_error');
 
@@ -154,87 +183,27 @@ class RW_Blog_Wizard_Core {
 
         }
 
-        global $wpdb;
-
-        //the table prefix for the blog we want to clone
-        $old_table_prefix = $wpdb->get_blog_prefix( $clone_from_blog_id );
-
-        //the table prefix for the target blog in which we are cloning
-        $new_table_prefix = $wpdb->get_blog_prefix( $clone_to_blog_id );
-
-        //which tables we want to clone
-        //add or remove your table here
-        $tables = array( 'posts', 'comments', 'options', 'postmeta',
-            'terms', 'term_taxonomy', 'term_relationships', 'commentmeta' );
-
-        //the options that we don't want to alter on the target blog
-        //we will preserve the values for these in the options table of newly created blog
-
-        $excluded_options = array(
-
-            'siteurl',
-            'blogname',
-            'blogdescription',
-            'home',
-            'admin_email',
-            'upload_path',
-            'upload_url_path',
-            'rw_blog_wizard_type_setted',
-            'rw_blog_wizard_type',
-            $new_table_prefix.'user_roles' //preserve the roles
-            //add your on keys to preserve here
-        );
-        if($overwrite === false){
-            $excluded_options[] = 'nav_menu_options';
-        }
+        MUCD_Files::copy_files($clone_from_blog_id, $clone_to_blog_id);
+        MUCD_Data::copy_data($clone_from_blog_id, $clone_to_blog_id);
+        // MUCD_Duplicate::copy_users($clone_from_blog_id, $clone_to_blog_id);
 
 
+        update_blog_option( $clone_to_blog_id, 'mucd_duplicable', "no");
+        update_blog_option( $clone_to_blog_id, 'rw_blog_wizard_type', $type);
 
-        //should we? I don't see any reason to do it, just to avoid any glitch
-        $excluded_options = esc_sql( $excluded_options );
-
-        //we are going to use II Clause to fetch everything in single query. For this to work, we will need to quote the string
-        //
-        //not the best way to do it, will improve in future
-        //I could not find an elegant way to quote string using sql, so here it is
-        $excluded_option_list = "('" . join( "','", $excluded_options ) . "')";
-
-        //the options table name for the new blog in which we are going to clone in next few seconds
-        $new_blog_options_table = $new_table_prefix.'options';
-
-        $excluded_options_query = "SELECT option_name, option_value FROM {$new_blog_options_table} WHERE option_name IN {$excluded_option_list}";
-
-        //let us fetch the data
-
-        $excluded_options_data = $wpdb->get_results( $excluded_options_query );
-
-        //we have got the data which we need to update again later
-
-        if($overwrite === true){
-            //now for each table, let us clone
-            foreach( $tables as $table ){
-
-                //drop table
-                //clone table
-                $query_drop = "DROP TABLE {$new_table_prefix}{$table}";
-
-                $query_copy = "CREATE TABLE {$new_table_prefix}{$table} AS (SELECT * FROM {$old_table_prefix}{$table})" ;
-
-                //drop table
-                $wpdb->query( $query_drop );
-                //clone table
-
-                $wpdb->query( $query_copy );
-
-            }
-        }
+        $form_message['msg'] = MUCD_NETWORK_PAGE_DUPLICATE_NOTICE_CREATED;
+        $form_message['site_id'] = $clone_to_blog_id;
 
 
-        //update the preserved options to the options table of the clonned blog
-        foreach( (array) $excluded_options_data as $excluded_option ){
+        MUCD_Duplicate::write_log('End site duplication : new site ID = ' . $clone_to_blog_id);
 
-            update_blog_option( $clone_to_blog_id, $excluded_option->option_name, $excluded_option->option_value );
-        }
+        add_user_to_blog($clone_to_blog_id, $user_id, 'administrator');
+        update_blog_option($clone_to_blog_id, 'blogname', $blogname);
+
+        wp_cache_flush();
+
+        return $form_message;
+
 
     }
 

@@ -25,7 +25,14 @@ class RW_Blog_Wizard_Settings {
     static public function register_settings() {
 
         register_setting( 'rw_blog_wizard_options', 'rw_blog_wizard_type' );
-        self::set_blog_type();
+        if($msg=self::set_blog_type()){
+            $notice = $msg['msg'];
+            $notice .= 'Deine <a href="'.get_home_url().'">Seite</a> wurde erfolgreich eingerichtet.';
+            wp_redirect(admin_url('?blog_wizard_notice='.urlencode($notice)));
+            exit;
+        }
+
+
     }
     /**
      * save all network settings
@@ -250,11 +257,15 @@ class RW_Blog_Wizard_Settings {
 
     static public function blog_template_list() {
 
+
+
+
         $network = is_network_admin();
 
         $blog_list = get_sites(  array(
             'search'=> 'template-'
         ));
+
 
 
         $select_options = '
@@ -277,7 +288,7 @@ class RW_Blog_Wizard_Settings {
             $blog_name = get_blog_details($blog_id)->blogname;
             $path = str_replace('/','',get_blog_details($blog_id)->path);
             $slug = strtolower(str_replace('template-','', $path));
-            $checked = ($blog_type == $slug )? 'checked': '';
+            $checked = ($blog_type == $slug && !$network)? 'checked': '';
 
 
             $select_options .= '<tr class="'.$checked.'">';
@@ -295,7 +306,9 @@ class RW_Blog_Wizard_Settings {
                 </tr>
             <table>';
 
-
+        if($network) {
+            echo $select_options;
+        }else{
         ?>
             <form method="POST" action="options.php">
                 <fieldset class="widefat">
@@ -304,10 +317,10 @@ class RW_Blog_Wizard_Settings {
                     <?php echo $select_options; ?>
                 </fieldset>
                 <input type="submit" class="button-primary" name="rw-blog-reset" value="Webseite formatieren und installieren" title="Alle Inhalte gehen verloren" /> &nbsp;
-                <input type="submit" class="button-secondary" name="rw-blog-config" value="Nur die Konfiguration ändern" title="Inhalte werden nicht gelöscht." /> &nbsp;
                 <button class="button" onclick="location.href='?'">Abbrechen</button>
            </form>
         <?php
+        }
     }
 
 
@@ -334,12 +347,13 @@ class RW_Blog_Wizard_Settings {
 
             if(isset( $_POST[ 'rw-blog-reset' ] )  && $template_blog->blog_id > 0 ){
 
-                RW_Blog_Wizard_Core::clone_blog($template_blog->blog_id ,get_current_blog_id(), true);
+                $msg = RW_Blog_Wizard_Core::clone_blog($template_blog->blog_id ,get_current_blog_id(), $blog_type);
+                return $msg;
 
-            }elseif(isset( $_POST[ 'rw-blog-config' ] )){
-                RW_Blog_Wizard_Core::clone_blog($template_blog->blog_id ,get_current_blog_id());
             }
+
         }
+        return false;
 
 
     }
@@ -379,13 +393,18 @@ class RW_Blog_Wizard_Settings {
 
         }
 
-        add_options_page(
-            'Einrichtiungshilfe',
-            'Einrichtiungshilfe',
-            'manage_options',
-            RW_Blog_Wizard::$plugin_base_name,
-            array( 'RW_Blog_Wizard_Settings', 'create_options' )
-        );
+        $blog = get_blog_details();
+
+        if(strpos ( $blog->path, 'template-')=== false  && get_current_blog_id() > 1 && $blog->post_count < 3 ) {
+
+            add_options_page(
+                'Einrichtiungshilfe',
+                'Einrichtiungshilfe',
+                'manage_options',
+                RW_Blog_Wizard::$plugin_base_name,
+                array('RW_Blog_Wizard_Settings', 'create_options')
+            );
+        }
         add_options_page(
             'Erweiterungen',
             'Erweiterungen',
@@ -410,6 +429,24 @@ class RW_Blog_Wizard_Settings {
      */
     static public function create_options() {
 
+        if( get_current_blog_id() == 1 && !is_network_admin() ){
+
+            echo '
+            <div class="notice error">
+                Für die Hauptseite steht keine Einrichtshilfe zur Verfügung.
+            </div>';
+            exit;
+        }
+
+        $blog = get_blog_details();
+
+        if(strpos ( $blog->path, 'template-')> 0 ){
+            echo '
+            <div class="notice error">
+                Du kannst ein Template Blog nicht überschreiben.
+            </div>';
+            exit;
+        }
 
 
         if ( !current_user_can( 'manage_options' ) )  {
@@ -484,38 +521,36 @@ class RW_Blog_Wizard_Settings {
             wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
         }
         $the_plugs = get_site_option('active_sitewide_plugins');
+        $the_plugs = array_keys($the_plugs);
 
         $posts = get_posts(array(
             'post_type'=>'rw-plugin',
-            'post_status'=>'any'
+            'post_status'=>'any',
+            'numberposts'       => -1,
         ));
         $sub_plugs=$group_options=array();
         foreach ($posts as $p){
-            $plugins[$p->post_title] = $p;
-            $sub_plugs = array_merge($sub_plugs, explode("\n",$p->post_excerpt));
+            if(!empty($p->post_excerpt)){
+                $included = explode("\n",$p->post_excerpt);
+                foreach ( $included as $incplugs ){
+                    $sub_plugs[] = trim($incplugs);
+                }
+            }
+            $plugins[trim($p->post_title)] = $p;
+
         }
+
+        $hide_plugins = array_unique(array_merge($sub_plugs,$the_plugs));
+
+
 
         $group_options = get_posts(array(
             'post_type' => 'rw-plugingroup',
-            'post_status' => 'any'
+            'post_status' => 'any',
+            'numberposts'       => -1,
         ));
 
-
-
-        $network_activated_plugins=array();
-        foreach($the_plugs as $key => $value) {
-            $network_activated_plugins[] = $key;
-        }
-        $network_activated_plugins = array_merge($sub_plugs,$network_activated_plugins);
-
-        foreach($network_activated_plugins as $key=>$value){
-            if (empty($value)){
-                unset($network_activated_plugins[$key]);
-            }else{
-                $network_activated_plugins[$key] =  trim($value);
-            }
-        }
-        //echo '<pre>'; var_dump($network_activated_plugins); echo '</pre>';
+        //echo '<pre>'; var_dump($hide_plugins); echo '</pre>';
         //echo '<pre>'; var_dump($group_options); echo '</pre>';
 
         $all_plugins = get_plugins();
@@ -532,7 +567,7 @@ class RW_Blog_Wizard_Settings {
 
                 foreach($all_plugins as $plugin_file=>$plugin_obj){
                     //echo '<pre>'; var_dump($plugin_obj); echo '</pre>';
-                    if(!in_array($plugin_file, $network_activated_plugins)):
+                    if(!in_array($plugin_file, $hide_plugins)):
 
                         if(isset($plugins[$plugin_file])){
 
@@ -764,13 +799,15 @@ class RW_Blog_Wizard_Settings {
 
         $posts = get_posts(array(
             'post_type'=>'rw-plugin',
-            'post_status'=>'publish'
+            'post_status'=>'publish',
+            'numberposts'       => -1,
         ));
         $plugins = $groups = array();
 
         $groups = get_posts(array(
             'post_type' => 'rw-plugingroup',
-            'post_status' => 'any'
+            'post_status' => 'any',
+            'numberposts'       => -1,
         ));
 
 

@@ -342,7 +342,6 @@ class RW_Blog_Wizard {
 
 }
 
-
 if ( class_exists( 'RW_Blog_Wizard' ) ) {
 
 
@@ -357,8 +356,6 @@ if ( class_exists( 'RW_Blog_Wizard' ) ) {
 }
 
 /*
- * Single Site Dashboard Widget
- */
 add_action('wp_dashboard_setup', 'wpse_54742_wp_dashboard_setup');
 
 function wpse_54742_wp_dashboard_setup() {
@@ -375,10 +372,6 @@ function wpse_54742_active_site_plugins() {
     echo '</ul>';
 }
 
-
-/*
- * Multisite Dashboard Widget
- */
 add_action('wp_network_dashboard_setup', 'wpse_54742_network_dashboard_setup');
 
 function wpse_54742_network_dashboard_setup() {
@@ -386,9 +379,6 @@ function wpse_54742_network_dashboard_setup() {
 }
 
 function wpse_54742_active_network_plugins() {
-    /*
-     * Network Activated Plugins
-     */
     $the_plugs = get_site_option('active_sitewide_plugins');
     echo '<h3>NETWORK ACTIVATED</h3><ul>';
     foreach($the_plugs as $key => $value) {
@@ -397,11 +387,7 @@ function wpse_54742_active_network_plugins() {
     }
     echo '</ul>';
 
-
-    /*
-     * Iterate Through All Sites
-     */
-    global $wpdb;
+   global $wpdb;
     $blogs = $wpdb->get_results($wpdb->prepare("
         SELECT blog_id
         FROM {$wpdb->blogs}
@@ -424,3 +410,4 @@ function wpse_54742_active_network_plugins() {
         echo '</ul>';
     }
 }
+*/

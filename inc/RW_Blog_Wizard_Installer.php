@@ -6,7 +6,7 @@ class RW_Blog_Wizard_Installer {
 	
 	function __construct($plugins = array() ){
 		$this->plugins = $plugins;	
-		if(count(plugins)>0{
+		if(count(plugins)>0){
 			$this->install_plugins();
 		}
 	}
@@ -55,11 +55,11 @@ class RW_Blog_Wizard_Installer {
 		$exec = $exec ? $exec : $slug.'.php';
 		
 		$this->plugins[$slug] = array(
-			'slug' = $slug,
-			'url' = $zip_url,
-			'install_path' = WP_PLUGIN_DIR.'/'.$slug.'.zip',
-			'path' = WP_PLUGIN_DIR.'/'.$slug,
-			'exec' = $slug.'/'.$exec
+			'slug' => $slug,
+			'url' => $zip_url,
+			'install_path' => WP_PLUGIN_DIR.'/'.$slug.'.zip',
+			'path' => WP_PLUGIN_DIR.'/'.$slug,
+			'exec' => $slug.'/'.$exec
 		);
 		
 		
