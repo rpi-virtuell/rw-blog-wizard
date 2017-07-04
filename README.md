@@ -2,8 +2,8 @@ RW Blog Wizard
 ====================
 
  - Author: Joachim Happel
- - Requires wordpress  at least: 4.0
- - Tested up to Version: 4.4
+ - Requires wordpress  at least: 4.7
+ - Tested up to Version: 4.8
  - License: GPLv2  http://www.gnu.org/licenses/gpl-2.0.html
  
 Description

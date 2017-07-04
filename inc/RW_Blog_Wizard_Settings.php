@@ -53,26 +53,26 @@ class RW_Blog_Wizard_Settings {
 
         $new_blog = isset($_POST['new-blog-type'])? trim($_POST['new-blog-type']):false ;
 
+        $blog_slug = sanitize_title($new_blog);
+
         if($new_blog){
             // create a new blog if not exits
 
-            $new_blog  = str_replace('template-','', $new_blog);
+            $blog_slug  = str_replace('template-','', $blog_slug);
 
-            $slug = strtolower('template-' . preg_replace('[^a-z0-9-]','',$new_blog) );
-
-            $path = '/'.$slug.'/';
+            $path = '/template-' .$blog_slug.'/';
 
             $sites = get_sites(array(
                 'path'=> $path
             ));
 
             if(count($sites) > 0 ){
-                wp_redirect(admin_url('network/settings.php?blog_wizard_notice=site_exists&slug='.$new_blog.'&page='.RW_Blog_Wizard::$plugin_base_name .''));
+                wp_redirect(admin_url('network/settings.php?blog_wizard_notice=site_exists&slug='.$blog_slug.'&page='.RW_Blog_Wizard::$plugin_base_name .''));
                 exit;
             }
 
 
-            $id = wpmu_create_blog( get_current_site()->domain, $path,  $new_blog, get_current_user_id() );
+            $id = wpmu_create_blog( get_current_site()->domain, $path,  $new_blog, 1,array(),1 );
 
             if(!$id){
                 wp_redirect(admin_url('network/settings.php?blog_wizard_notice=not_created&slug='.$new_blog.'&page='.RW_Blog_Wizard::$plugin_base_name .''));
@@ -953,6 +953,15 @@ class RW_Blog_Wizard_Settings {
 
 
         wp_redirect(admin_url('admin.php?blog_wizard_notice='.$message.'&page=rw-addons'));
+    }
+
+    static function set_no_wizard_type(){
+        check_admin_referer('rw_blog_wizard_deactivate_dashboard_welcome');
+
+
+        update_option('rw_blog_wizard_type','nowizard');
+        wp_redirect(admin_url('index.php'));
+        exit;
     }
 
 }

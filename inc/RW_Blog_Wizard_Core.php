@@ -98,6 +98,81 @@ class RW_Blog_Wizard_Core {
     }
 
 
+    public static function setup_dashboard_widgets() {
+
+        global $wp_meta_boxes;
+
+        $blog = get_blog_details();
+        $blog->post_count;
+
+        if( !is_network_admin() &&  get_current_blog_id() > 1 && $blog->post_count < 2 ) {
+
+            remove_meta_box('dashboard_incoming_links', 'dashboard', 'normal');
+            //remove_meta_box('dashboard_plugins', 'dashboard', 'normal');
+            remove_meta_box('dashboard_recent_comments', 'dashboard', 'normal');
+
+            remove_meta_box('dashboard_quick_press', 'dashboard', 'side');
+            //remove_meta_box('dashboard_primary', 'dashboard', 'side');
+            remove_meta_box('dashboard_secondary', 'dashboard', 'side');
+
+            if (empty(get_option('rw_blog_wizard_type'))) {
+                unset($wp_meta_boxes['dashboard']);
+                wp_add_dashboard_widget('rw_blog_wizard_widget', 'Hilfe zum Einstieg', array('RW_Blog_Wizard_Core', 'display_rw_blog_wizard_widget'));
+
+                remove_meta_box('dashboard_recent_drafts', 'dashboard', 'side');
+                remove_meta_box('dashboard_activity', 'dashboard', 'side');
+                remove_meta_box('dashboard_right_now', 'dashboard', 'side');
+                remove_meta_box('dashboard_right_now', 'dashboard', 'normal');
+                remove_action('welcome_panel', 'wp_welcome_panel');
+
+            }
+        }
+    }
+
+
+    public static function display_rw_blog_wizard_widget(){
+
+        $nonce = wp_create_nonce( 'rw_blog_wizard_deactivate_dashboard_welcome' );
+        $endsetuplink = admin_url('admin-post.php?action=rw_blog_wizard_deactivate_dashboard_welcome&_wpnonce='.$nonce);
+
+        ?>
+        <div class="welcome-panel-content">
+            <h2>Willkommen in unserem Bogssystem!</h2>
+            <p class="about-description">Wir haben einige Links zusammengestellt, um dir den Start zu erleichtern:</p>
+            <div class="welcome-panel-column-container">
+
+                    <h3>Jetzt deine Seite Konfigurieren</h3>
+                    <p>Wähle aus verschiedenen Vorlagen eine am ehesten geeignete Webseite aus, die du anschließend mit deinen eigenen inhalten befüllen kannst. </p>
+                    <a class="button button-primary button-hero load-customize hide-if-no-customize" href="<?php echo admin_url('options-general.php?page='.urlencode(RW_Blog_Wizard::$plugin_base_name));?>">Vorlage aussuchen</a>
+
+
+            </div>
+            <div class="welcome-panel-column-container">
+                <h2>Du benötigst weitere Hilfe zum Einstieg?</h2>
+
+                <ul>
+                    <li><a href="http://fragen.rpi-virtuell.de/" class="welcome-icon welcome-learn-more">Nutze unser öffentliches Hilfesystem</a></li>
+                    <li><a href="https://codex.wordpress.org/First_Steps_With_WordPress" class="welcome-icon welcome-learn-more">Erfahre mehr über den Einstieg</a></li>
+
+                </ul>
+            </div>
+            <div class="welcome-panel-column-container">
+                <h2>Erfahrenener Blogger?</h2>
+
+
+                <p>Du kennst dich schon etwas aus? Dann kannst du dieses Widget ausblendeb und gleich auf deiner neuen Seite mit dem Bloggen starten</p>
+
+                <p><a class="button button-secondary load-customize hide-if-no-customize" href="<?php echo $endsetuplink;?>">Sofort starten</a></p>
+
+                <!--<p><a href="<?php echo admin_url('admin.php?page=rw-addons');?>" class="welcome-icon welcome-learn-more">Möglichkeiten, dein System später zu erweitern.</a></p>-->
+
+
+            </div>
+
+        </div>
+        <?php
+    }
+
     /**
      * Load custom Stylesheet
      *
