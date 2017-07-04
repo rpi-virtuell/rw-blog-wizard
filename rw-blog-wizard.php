@@ -177,7 +177,8 @@ class RW_Blog_Wizard {
          do_action( 'rw_blog_wizard_enqueue' );
 
         //enable ajax examples
-        // add_action( 'admin_enqueue_scripts',    array( 'RW_Blog_Wizard_Core','enqueue_js' ) );
+         add_action( 'admin_enqueue_scripts',    array( 'RW_Blog_Wizard_Core','enqueue_js' ) );
+         add_action( 'admin_enqueue_scripts',    array( 'RW_Blog_Wizard_Core','enqueue_style' ) );
         // add_action( 'wp_ajax_rw_blog_wizard_core_ajaxresponse' ,array( 'RW_Blog_Wizard_Core','ajaxresponse' )  );
 
         //enable an widget
@@ -188,7 +189,8 @@ class RW_Blog_Wizard {
             echo '<div class="update-nag">Configuration of Foo is not complete!</div>';
         }
         add_action( 'network_admin_notices', array( 'RW_Blog_Wizard_Settings', 'admin_notice' ) );
-        
+        add_action( 'admin_notices', array( 'RW_Blog_Wizard_Settings', 'admin_notice' ) );
+
 
     }
 

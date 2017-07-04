@@ -109,6 +109,7 @@ class RW_Blog_Wizard_Core {
      */
     public static function enqueue_style() {
         wp_enqueue_style( 'customStyle',RW_Blog_Wizard::$plugin_url . '/css/style.css' );
+        wp_enqueue_style( 'jquery-ui-Style',"//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" );
     }
 
     /**
@@ -123,6 +124,7 @@ class RW_Blog_Wizard_Core {
     public static function enqueue_js() {
 
         wp_enqueue_script( 'rw_blog_wizard_ajax_script',RW_Blog_Wizard::$plugin_url . '/js/javascript.js' );
+        wp_enqueue_script( 'jquery-ui','//code.jquery.com/ui/1.12.1/jquery-ui.js' );
 
     }
 
@@ -156,20 +158,22 @@ class RW_Blog_Wizard_Core {
     }
 
     /**
-     *
-     * @global type $wpdb
-     * @param int $clone_from_blog_id the blog id which we are going to clone
-
+     @param int $clone_from_blog_id the blog id which we are going to clone
+     @param int $clone_to_blog_id the blog id which we are copy to
+     @param string $type the template name
      */
-
     public static function clone_blog( $clone_from_blog_id, $clone_to_blog_id , $type ){
 
         $clone_from_blog_id = intval($clone_from_blog_id);
         $clone_to_blog_id = intval($clone_to_blog_id);
 
-        $blogname = get_blog_details()->blogname;
+        $blogname = get_blog_option($clone_to_blog_id,'blogname');
+        $description = get_blog_option($clone_to_blog_id,'blogdescription');
+        $admin_email = get_blog_option($clone_to_blog_id,'admin_email');
 
         $user_id = get_current_user_id();
+
+        add_user_to_blog($clone_from_blog_id, $user_id, 'administrator');
 
         if(!class_exists('MUCD_Duplicate')) {
             wp_die("plugin multisite-clone-duplicator is not installed or activated");
@@ -185,24 +189,26 @@ class RW_Blog_Wizard_Core {
 
         MUCD_Files::copy_files($clone_from_blog_id, $clone_to_blog_id);
         MUCD_Data::copy_data($clone_from_blog_id, $clone_to_blog_id);
-        // MUCD_Duplicate::copy_users($clone_from_blog_id, $clone_to_blog_id);
+        //MUCD_Duplicate::copy_users($clone_from_blog_id, $clone_to_blog_id);
 
+        remove_user_from_blog($user_id, $clone_from_blog_id);
 
         update_blog_option( $clone_to_blog_id, 'mucd_duplicable', "no");
         update_blog_option( $clone_to_blog_id, 'rw_blog_wizard_type', $type);
 
-        $form_message['msg'] = MUCD_NETWORK_PAGE_DUPLICATE_NOTICE_CREATED;
-        $form_message['site_id'] = $clone_to_blog_id;
+        global $wpdb;
+        $new_table_prefix = $wpdb->get_blog_prefix( $clone_to_blog_id );
+        $sql = "UPDATE {$new_table_prefix}options SET option_value='{$blogname}' WHERE option_name = 'blogname';";
+        $wpdb->query( $sql );
+        $sql = "UPDATE {$new_table_prefix}options SET option_value='{$description }' WHERE option_name = 'blogdescription';";
+        $wpdb->query( $sql );
+        $sql = "UPDATE {$new_table_prefix}options SET option_value='{$admin_email }' WHERE option_name = 'admin_email';";
+        $wpdb->query( $sql );
 
-
-        MUCD_Duplicate::write_log('End site duplication : new site ID = ' . $clone_to_blog_id);
-
-        add_user_to_blog($clone_to_blog_id, $user_id, 'administrator');
-        update_blog_option($clone_to_blog_id, 'blogname', $blogname);
 
         wp_cache_flush();
 
-        return $form_message;
+        return '';
 
 
     }

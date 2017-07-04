@@ -24,11 +24,11 @@ class RW_Blog_Wizard_Settings {
      */
     static public function register_settings() {
 
+         $admin_url = admin_url('index.php?blog_wizard_notice=');
+
         register_setting( 'rw_blog_wizard_options', 'rw_blog_wizard_type' );
-        if($msg=self::set_blog_type()){
-            $notice = $msg['msg'];
-            $notice .= 'Deine <a href="'.get_home_url().'">Seite</a> wurde erfolgreich eingerichtet.';
-            wp_redirect(admin_url('?blog_wizard_notice='.urlencode($notice)));
+        if(self::set_blog_type()){
+            wp_redirect($admin_url.'site_cloned');
             exit;
         }
 
@@ -106,6 +106,18 @@ class RW_Blog_Wizard_Settings {
                     break;
                 case 'site_created':
                     $message = 'Die Vorlage wurde erfolgreich erstellt und kann nun eingerichtet werden';
+                    $notice_type = 'success';
+                    break;
+                case 'site_cloned':
+                    $message = 'Deine Seite wurde erfolgreich konfiguriert und kann nun mit Inhalt gefüllt werden. Happy Blogging!';
+                    $notice_type = 'success';
+                    break;
+                case 'plugin_activated':
+                    $message = 'Die Erweiterung wurde erfolgreich installiert und kann nun verwendet werden.';
+                    $notice_type = 'success';
+                    break;
+                case 'plugin_deactivated':
+                    $message = 'Die Erweiterung wurde deinstalliert';
                     $notice_type = 'success';
                     break;
                 default:
@@ -197,14 +209,14 @@ class RW_Blog_Wizard_Settings {
 
 
         $url = home_url() .'/instruction/';
-        $blog_name = get_blog_details($blog_id)->blogname;
+        $blog_name = get_blog_option($blog_id,'blogname');
 
-        // Get latest Post
+        // get instruction page
         $postid = url_to_postid( $url  );
 
         $edit_url = get_edit_post_link( $postid );
 
-        $edit_link = (is_super_admin() || is_admin())? '<a href="'.$edit_url.'">Bearbeiten</a>': '';
+        $edit_link = (is_super_admin() && is_network_admin())? '<a href="'.$edit_url.'">Bearbeiten</a>': '';
 
         if(! $postid ){
 
@@ -345,10 +357,13 @@ class RW_Blog_Wizard_Settings {
             }
 
 
-            if(isset( $_POST[ 'rw-blog-reset' ] )  && $template_blog->blog_id > 0 ){
+            if(isset( $_POST[ 'rw-blog-reset' ] )  && $template_blog->blog_id > 1 ){
 
-                $msg = RW_Blog_Wizard_Core::clone_blog($template_blog->blog_id ,get_current_blog_id(), $blog_type);
-                return $msg;
+                $blog_id = get_current_blog_id();
+
+                RW_Blog_Wizard_Core::clone_blog($template_blog->blog_id ,$blog_id, $blog_type);
+
+                return true;
 
             }
 
@@ -393,27 +408,31 @@ class RW_Blog_Wizard_Settings {
 
         }
 
-        $blog = get_blog_details();
+        if(!is_network_admin()){
+            $blog = get_blog_details();
 
-        if(strpos ( $blog->path, 'template-')=== false  && get_current_blog_id() > 1 && $blog->post_count < 3 ) {
+            if(strpos ( $blog->path, 'template-')=== false  && get_current_blog_id() > 1 && $blog->post_count < 3 ) {
 
-            add_options_page(
-                'Einrichtiungshilfe',
-                'Einrichtiungshilfe',
+                add_options_page(
+                    'Einrichtiungshilfe',
+                    'Einrichtiungshilfe',
+                    'manage_options',
+                    RW_Blog_Wizard::$plugin_base_name,
+                    array('RW_Blog_Wizard_Settings', 'create_options')
+                );
+            }
+
+
+            add_menu_page(
+                'Erweiterungen',
+                'Erweiterungen',
                 'manage_options',
-                RW_Blog_Wizard::$plugin_base_name,
-                array('RW_Blog_Wizard_Settings', 'create_options')
+                'rw-addons',
+                array( 'RW_Blog_Wizard_Settings', 'plugin_selector' ),
+                'dashicons-hammer',
+                80
             );
         }
-        add_options_page(
-            'Erweiterungen',
-            'Erweiterungen',
-            'manage_options',
-            'plugins',
-            array( 'RW_Blog_Wizard_Settings', 'plugin_selector' )
-        );
-
-
 
     }
 
@@ -485,25 +504,20 @@ class RW_Blog_Wizard_Settings {
         <?php
     }
 
-    static public function get_blog_plugins(){
-
-        $site_plugs = get_site_option('active_sitewide_plugins');
-        $plugs = array_keys($site_plugs);
-
-
-        $blog_plugs = get_option('active_plugins');
-        $active_plugins = array_merge($blog_plugs,  $plugs );
-
-        $plugins = array();
+    static public function get_all_plugins(){
 
         $all_plugins = get_plugins();
-        foreach ($all_plugins as $plugin=>$detai_arr){
-            $plugins[$plugin]='';
-        }
+        $plugins = array_keys($all_plugins);
 
-        foreach ($active_plugins as $plugin){
-            $plugins[$plugin]='active';
-        }
+        return $plugins;
+    }
+    static public function get_active_plugins(){
+
+        $site_plugs = get_site_option('active_sitewide_plugins');
+        $site_plugs = array_keys($site_plugs);
+
+        $active_plugins = get_option('active_plugins');
+        $plugins = array_merge($site_plugs, $active_plugins);
 
         return $plugins;
     }
@@ -527,6 +541,8 @@ class RW_Blog_Wizard_Settings {
             'post_type'=>'rw-plugin',
             'post_status'=>'any',
             'numberposts'       => -1,
+            'orderby'=>'post_title',
+            'order'=>'ASC'
         ));
         $sub_plugs=$group_options=array();
         foreach ($posts as $p){
@@ -548,6 +564,8 @@ class RW_Blog_Wizard_Settings {
             'post_type' => 'rw-plugingroup',
             'post_status' => 'any',
             'numberposts'       => -1,
+            'orderby'=>'post_title',
+            'order'=>'ASC'
         ));
 
         //echo '<pre>'; var_dump($hide_plugins); echo '</pre>';
@@ -790,17 +808,24 @@ class RW_Blog_Wizard_Settings {
      * @todo Aktivieren Button
      */
     static public function plugin_selector(){
-        global $switched;
-        switch_to_blog(1);
+
+      //  var_dump(admin_url('admin-post.php')); die();
+
+        $installed_plugins = self::get_all_plugins();
+        $active_plugins = self::get_active_plugins();
+
+
 
         if ( !current_user_can( 'manage_options' ) )  {
             wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
         }
-
+        switch_to_blog(1);
         $posts = get_posts(array(
             'post_type'=>'rw-plugin',
             'post_status'=>'publish',
             'numberposts'       => -1,
+            'orderby'=>'post_title',
+            'order'=>'ASC'
         ));
         $plugins = $groups = array();
 
@@ -808,6 +833,8 @@ class RW_Blog_Wizard_Settings {
             'post_type' => 'rw-plugingroup',
             'post_status' => 'any',
             'numberposts'       => -1,
+            'orderby'=>'post_title',
+            'order'=>'ASC'
         ));
 
 
@@ -816,107 +843,116 @@ class RW_Blog_Wizard_Settings {
             $plugins[$group_id][]=$p;
         }
 
-        $installed_plugins = self::get_blog_plugins();
 
-        $plug_array = array_keys($installed_plugins);
+        restore_current_blog();
+
+
+
+
 
         ?>
         <div class="wrap"  id="rw_blog_wizard_main_settings">
-
-            <h2>Erweiterungen</h2>
-
-            <table class="form-table">
-
+         <h2>Erweiterungen (Plugins)</h2>
+        <div style="float: left; width:20%;min-width:300px; padding:0">
+            <div style="margin:10px">
+                <p>
+                    Du brauchst weitere Funktionen? Hier findest du unter den verschiedenen Rubriken wertvolle Erweiterungen, die deine Webseite um viele zusätzliche Funktionen erweitern kann. <br>
+                    Bedenke jedoch, dass dein System mit jeder aktivierten Erweiterung langsamer wird. </p>
+                <p>
+                    Fragen dazu gerne in unserem <a href="http://fragen.rpi-virtuell.de/">Offenen Hilfesystem</a>
+                </p>
+            </div>
+        </div>
+        <div style="width:70%; min-width:400px; padding-left:20px;float: right">
+            <div id="accordion">
                 <?php
                 $nonce = wp_create_nonce( 'rw_blog_wizard_activate_selected_plugin_bundle' );
                 foreach($groups as $go):
 
                     if(count($plugins[$go->ID])>0): ?>
-                        <table style="width:100%">
-                            <thead style="background-color:lavender">
-                                <tr>
-                                    <td style="width:120px"><img src="<?php echo get_the_post_thumbnail_url($go,array(100,100))?>"></td>
-                                    <td style="padding: 0 20px">
-                                        <h2><?php echo $go->post_title; ?></h2>
-                                        <?php echo $go->post_content; ?>
-                                    </td>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="2">
-                                        <?php
-                                            foreach ($plugins[$go->ID] as $plugin){
-                                                if(in_array($plugin->post_title, $plug_array)){
-                                                    $meta = get_post_meta($plugin->ID);
-                                                    $active = $installed_plugins[$plugin->post_title];
-                                                    ?>
-                                                    <div style="float:left; width:400px; background-color: #fff; margin:10px 10px 0 0; padding:20px">
-                                                        <h3><?php echo $plugin->post_content_filtered; ?></h3>
-                                                        <p><?php echo $plugin->post_content; ?></p>
-                                                        <p>Entwickler: <?php echo (isset($meta['plugin_author'][0])?$meta['plugin_author'][0]:''); ?></p>
-                                                        <p><a href="<?php echo (isset($meta['plugin_url'][0])?$meta['plugin_url'][0]:''); ?>">Mehr über dieses Erweiterung ..</a></p>
-                                                        <?php if(!$active):?>
-                                                            <a href="<?php echo admin_url('admin-post.php?action=rw_blog_wizard_activate_selected_plugin_bundle&id='.$plugin->ID.'&_wpnonce='.$nonce); ?>"
-                                                                class="button button-primary"><?php esc_html_e('Activate');?></a>
-                                                        <?php else:?>
-                                                            <a href="<?php echo admin_url('admin-post.php?action=rw_blog_wizard_activate_selected_plugin_bundle&id='.$plugin->ID.'&_wpnonce='.$nonce); ?>"
-                                                               class="button button-secondary"><?php esc_html_e('Deactivate');?></a>
-                                                        <?php endif?>
+                        <h3><img src="<?php echo get_the_post_thumbnail_url($go,array(80,80))?>"> <?php echo $go->post_title; ?></h3>
+                        <div>
+                            <quote><?php echo $go->post_content; ?></quote>
 
-                                                    </div>
-                                                <?php
-                                                }
-                                            }
+                            <?php
+                                foreach ($plugins[$go->ID] as $plugin){
+                                    if(in_array($plugin->post_title, $installed_plugins)){
+                                        $meta = get_post_meta($plugin->ID);
+                                        $active = in_array($plugin->post_title,$active_plugins);
                                         ?>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                        <div style="float:left; width:400px; background-color: #fff; margin:10px 10px 0 0; padding:20px">
+                                            <h3><?php echo $plugin->post_content_filtered; ?></h3>
+                                            <p><?php echo $plugin->post_content; ?></p>
+                                            <p>Entwickler: <?php echo (isset($meta['plugin_author'][0])?$meta['plugin_author'][0]:''); ?></p>
+                                            <p><a href="<?php echo (isset($meta['plugin_url'][0])?$meta['plugin_url'][0]:''); ?>">Mehr über dieses Erweiterung ..</a></p>
+                                            <?php if(!$active):?>
+                                                <a href="<?php echo admin_url('admin-post.php?action=rw_blog_wizard_activate_selected_plugin_bundle&do=activate&id='.$plugin->ID.'&_wpnonce='.$nonce); ?>"
+                                                    class="button button-primary"><?php esc_html_e('Activate');?></a>
+                                            <?php else:?>
+                                                <a href="<?php echo admin_url('admin-post.php?action=rw_blog_wizard_activate_selected_plugin_bundle&do=deactivate&id='.$plugin->ID.'&_wpnonce='.$nonce); ?>"
+                                                   class="button button-secondary"><?php esc_html_e('Deactivate');?></a>
+                                            <?php endif?>
+
+                                        </div>
+                                    <?php
+                                    }
+                                }
+                            ?>
+                        </div>
                     <?php  endif;
                  endforeach;?>
 
-            </table>
+            </div>
+        </div>
+        <script>
 
+            jQuery( "#accordion" ).accordion({
+                collapsible: true,
+                active: false,
+                heightStyle: "content"
+            });
+
+        </script>
         <?php
-        restore_current_blog();
+
     }//end function plugin_selector
 
     static function activate_selected_plugin_bundle()
     {
+        //global $switched;
+
         check_admin_referer('rw_blog_wizard_activate_selected_plugin_bundle');
 
-        $plugin = get_post($_GET['id']);
+        $do_activate = ($_GET['do'] == 'activate')?true:false;
 
-        $activate[] = $plugin->post_title;
+
+        switch_to_blog(1);
+        $plugin = get_post($_GET['id']);
+        restore_current_blog();
+        $activate[] = trim($plugin->post_title);
         $sub_plugs = explode("\n",$plugin->post_excerpt);
         foreach ($sub_plugs as $p){
-            $activate[] = trim($p);
+            if(!empty(trim($p))){
+                $activate[] = trim($p);
+            }
+        }
+        if($do_activate) {
+            foreach ($activate as $plugin){
+               // var_dump(( $plugin)); die();
+                activate_plugins( plugin_basename( $plugin) ,false, false );
+            }
+        }else{
+            rsort($activate);
+            foreach ($activate as $plugin){
+                deactivate_plugins( plugin_basename( $plugin ) );
+            }
         }
 
-        foreach ($activate as $plugin){
-            self::activate_plugin($plugin);
-        }
-        wp_redirect(admin_url('plugins.php'));
+        $message = ($do_activate)?'plugin_activated':'plugin_deactivated';
+
+
+
+        wp_redirect(admin_url('admin.php?blog_wizard_notice='.$message.'&page=rw-addons'));
     }
 
-    static function activate_plugin( $plugin ){
-
-
-
-        $current = get_option( 'active_plugins' );
-        $plugin = plugin_basename( trim( $plugin ) );
-
-        if ( !in_array( $plugin, $current ) ) {
-            $current[] = $plugin;
-            sort( $current );
-            do_action( 'activate_plugin', trim( $plugin ) );
-            update_option( 'active_plugins', $current );
-            do_action( 'activate_' . trim( $plugin ) );
-            do_action( 'activated_plugin', trim( $plugin) );
-        }
-
-        return null;
-
-    }
 }
