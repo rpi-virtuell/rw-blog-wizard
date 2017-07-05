@@ -123,8 +123,9 @@ Auf einer Zweiten Eintsellungsseite steht eine Auswahl von Plugins zur Verfügun
 Screenshots
 ---------------------
  
- 1. 
- 2. 
+![image](https://user-images.githubusercontent.com/307023/27869662-ea75560e-61a0-11e7-91f2-f7aa2129c672.png)
+![image](https://user-images.githubusercontent.com/307023/27869735-23e9357c-61a1-11e7-984d-761622074741.png)
+
  
 Changelog
 ---------------------
