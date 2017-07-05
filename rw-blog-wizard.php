@@ -26,7 +26,7 @@
  * Plugin Name:       RW Blog Wizard
  * Plugin URI:        https://github.com/rpi-virtuell/rw-blog-wizard
  * Description:       Multisiteplugin, das dem Administrator eines Blogs die Möglichkeit gibt, vorkonfigurierte Plugins und Themes zu laden.
- * Version:           0.0.3
+ * Version:           0.0.4
  * Author:            Joachim Happel
  * Author URI:        http://joachim-happel.de
  * License:           GNU General Public License v2
@@ -40,7 +40,7 @@
  * Requires PHP:      5.3
  */
 
-// @TODO Klassenname
+
 class RW_Blog_Wizard {
     /**
      * Plugin version
@@ -49,7 +49,7 @@ class RW_Blog_Wizard {
      * @since   0.0.1
      * @access  public
      */
-    static public $version = "0.0.3";
+    static public $version = "0.0.4";
 
     /**
      * Singleton object holder
@@ -163,14 +163,14 @@ class RW_Blog_Wizard {
         add_action( 'admin_post_rw_blog_wizard_network_settings',
                                                  array( 'RW_Blog_Wizard_Settings', 'network_settings' ) );
         add_action( 'admin_post_rw_blog_wizard_plugin_options_action',
-                                                 array( 'RW_Blog_Wizard_Settings', 'plugin_options_action' ) );
+                                                 array( 'RW_Blog_Wizard_Settings', 'edit_and_combine_plugins_action' ) );
         add_action( 'admin_post_rw_blog_wizard_activate_selected_plugin_bundle',
                                                  array( 'RW_Blog_Wizard_Settings', 'activate_selected_plugin_bundle' ) );
         add_action( 'admin_post_rw_blog_wizard_deactivate_dashboard_welcome',
-                                                 array( 'RW_Blog_Wizard_Settings', 'set_no_wizard_type' ) );
-        add_action( 'admin_init',                array( 'RW_Blog_Wizard_Settings', 'register_settings' ) );
-        add_action( 'admin_menu',                array( 'RW_Blog_Wizard_Settings', 'options_menu' ) );
-        add_action( 'network_admin_menu',        array( 'RW_Blog_Wizard_Settings', 'options_menu' ) );
+                                                 array( 'RW_Blog_Wizard_Settings', 'set_no_blog_type' ) );
+        add_action( 'admin_init',                array( 'RW_Blog_Wizard_Settings', 'register_blog_type' ) );
+        add_action( 'admin_menu',                array( 'RW_Blog_Wizard_Settings', 'admin_menu' ) );
+        add_action( 'network_admin_menu',        array( 'RW_Blog_Wizard_Settings', 'admin_menu' ) );
 
 
         //enable and load css and js files
@@ -358,60 +358,3 @@ if ( class_exists( 'RW_Blog_Wizard' ) ) {
     register_uninstall_hook(  __FILE__,	array( 'RW_Blog_Wizard_Installation', 'on_uninstall' ) );
     register_deactivation_hook( __FILE__, array( 'RW_Blog_Wizard_Installation', 'on_deactivation' ) );
 }
-
-/*
-add_action('wp_dashboard_setup', 'wpse_54742_wp_dashboard_setup');
-
-function wpse_54742_wp_dashboard_setup() {
-    wp_add_dashboard_widget( 'wpse_54742_active_site_plugins', __( 'Active Plugins' ), 'wpse_54742_active_site_plugins' );
-}
-
-function wpse_54742_active_site_plugins() {
-    $the_plugs = get_option('active_plugins');
-    echo '<ul>';
-    foreach($the_plugs as $key => $value) {
-        $string = explode('/',$value); // Folder name will be displayed
-        echo '<li>'.$string[0] .'</li>';
-    }
-    echo '</ul>';
-}
-
-add_action('wp_network_dashboard_setup', 'wpse_54742_network_dashboard_setup');
-
-function wpse_54742_network_dashboard_setup() {
-    wp_add_dashboard_widget( 'wpse_54742_active_network_plugins', __( 'Network Active Plugins' ), 'wpse_54742_active_network_plugins' );
-}
-
-function wpse_54742_active_network_plugins() {
-    $the_plugs = get_site_option('active_sitewide_plugins');
-    echo '<h3>NETWORK ACTIVATED</h3><ul>';
-    foreach($the_plugs as $key => $value) {
-        $string = explode('/',$key); // Folder name will be displayed
-        echo '<li>'.$string[0] .'</li>';
-    }
-    echo '</ul>';
-
-   global $wpdb;
-    $blogs = $wpdb->get_results($wpdb->prepare("
-        SELECT blog_id
-        FROM {$wpdb->blogs}
-        WHERE site_id = '{$wpdb->siteid}'
-        AND spam = '0'
-        AND deleted = '0'
-        AND archived = '0'
-    "));
-
-    echo '<h3>ALL SITES</h3>';
-
-    foreach ($blogs as $blog) {
-        $the_plugs = get_blog_option($blog->blog_id, 'active_plugins');
-        echo '<hr /><h4><strong>SITE</strong>: '. get_blog_option($blog->blog_id, 'blogname') .'</h4>';
-        echo '<ul>';
-        foreach($the_plugs as $key => $value) {
-            $string = explode('/',$value); // Folder name will be displayed
-            echo '<li>'.$string[0] .'</li>';
-        }
-        echo '</ul>';
-    }
-}
-*/

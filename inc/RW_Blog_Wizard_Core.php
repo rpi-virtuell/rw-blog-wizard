@@ -233,9 +233,13 @@ class RW_Blog_Wizard_Core {
     }
 
     /**
-     @param int $clone_from_blog_id the blog id which we are going to clone
-     @param int $clone_to_blog_id the blog id which we are copy to
-     @param string $type the template name
+     *  clones all content, files and options from one multisite blog (temptlate) to an other.
+     *
+     *  @requires plugin multisite-clone-duplicator
+     *
+     *  @params int $clone_from_blog_id the blog id which we are going to clone
+     *  @params int $clone_to_blog_id the blog id which we are copy to
+     *  @params string $type the template name
      */
     public static function clone_blog( $clone_from_blog_id, $clone_to_blog_id , $type ){
 

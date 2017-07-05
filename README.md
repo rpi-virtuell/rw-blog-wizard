@@ -17,11 +17,15 @@ Description
 Templates:
 ---------------------
  Vorauswahl von Nutzungsszenarien:
+ 
+ * Standartblog (Default Theme)
  * Tagebuch / Logbuch / Akadimisches Blog
  * Tagungseinladung
  * Rezensionen / Reviews
  * Projektpräsentation
- * Portfolio / Biographie
+ * Statische Seiten, Visitenkarte
+ * Leistungskatalog, Portfolio
+ * Medien/Produkt Katalog
  * Unterrichtsmaterialien / OER
     * H5P
     * Learning Apps
@@ -31,17 +35,20 @@ Templates:
     * Mindmap
     * Chat
     * Expedition (via Formular)
- * E-Book
- * Schulbuch
- * Lernwelt / Advance Organizer
+ * Degitaler Reader (Downloadsammlung)
+ * Digitales Schulbuch / Lernwelt
  * Newspaper / Newsletter / Aggregator
- * CMS / Webauftritt
+ * Universal CMS / Webauftritt (DIVI)
+ * Arthotek, Kunstausstellungen
+ * eXpedition, Webquests
 
  
  Generelle Plugins (optional inzuzufügen)
  ------------------------
  **SEO**:
  * Statify
+ * Meta-Data, Open-Data
+ * Sitemap
  
  **Interkationen**:
 

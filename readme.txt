@@ -3,7 +3,7 @@ Contributors: Joachim Happel
 Tags: reliwerk
 Requires at least: 4.7
 Tested up to: 4.8
-Stable tag: 0.0.3
+Stable tag: 0.0.4
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -37,6 +37,7 @@ Answer
 
 
 == Changelog ==
-0.0.1 add Erweiterungen
+0.0.4 recode verständlichere Funktionsnamen
+0.0.3 add Erweiterungen
 0.0.2 add Einrichtungshilfe
 0.0.1 initial release

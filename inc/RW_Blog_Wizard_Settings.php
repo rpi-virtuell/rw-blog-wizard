@@ -22,7 +22,7 @@ class RW_Blog_Wizard_Settings {
      * @static
      * @return  void
      */
-    static public function register_settings() {
+    static public function register_blog_type() {
 
          $admin_url = admin_url('index.php?blog_wizard_notice=');
 
@@ -166,7 +166,7 @@ class RW_Blog_Wizard_Settings {
         return get_option( 'rw_blog_wizard_type' );
     }
 
-    static public function add_blog_template_form() {
+    static public function form_add_new_template() {
 
         if(is_network_admin()):?>
 
@@ -267,7 +267,7 @@ class RW_Blog_Wizard_Settings {
      * @return  void
      */
 
-    static public function blog_template_list() {
+    static public function loop_blog_templates() {
 
 
 
@@ -385,7 +385,7 @@ class RW_Blog_Wizard_Settings {
      */
 
 
-    static public function options_menu() {
+    static public function admin_menu() {
         if(is_multisite()) {
 
             add_submenu_page(
@@ -394,7 +394,7 @@ class RW_Blog_Wizard_Settings {
                 'Einrichtiungshilfe',
                 'manage_network_options',
                 RW_Blog_Wizard::$plugin_base_name,
-                array('RW_Blog_Wizard_Settings', 'create_options')
+                array('RW_Blog_Wizard_Settings', 'display_blog_templates')
             );
 
             add_submenu_page(
@@ -403,7 +403,7 @@ class RW_Blog_Wizard_Settings {
                 'Erweiterungen',
                 'manage_network_options',
                 'erweiterungen',
-                array('RW_Blog_Wizard_Settings', 'plugin_options')
+                array('RW_Blog_Wizard_Settings', 'edit_and_combine_plugins')
             );
 
         }
@@ -418,7 +418,7 @@ class RW_Blog_Wizard_Settings {
                     'Einrichtiungshilfe',
                     'manage_options',
                     RW_Blog_Wizard::$plugin_base_name,
-                    array('RW_Blog_Wizard_Settings', 'create_options')
+                    array('RW_Blog_Wizard_Settings', 'display_blog_templates')
                 );
             }
 
@@ -446,7 +446,7 @@ class RW_Blog_Wizard_Settings {
      *
      * @return  void
      */
-    static public function create_options() {
+    static public function display_blog_templates() {
 
         if( get_current_blog_id() == 1 && !is_network_admin() ){
 
@@ -497,8 +497,8 @@ class RW_Blog_Wizard_Settings {
 
             <?php endif; ?>
             <hr />
-            <?php self::add_blog_template_form();?>
-            <?php self::blog_template_list();?>
+            <?php self::form_add_new_template();?>
+            <?php self::loop_blog_templates();?>
 
         </div>
         <?php
@@ -530,7 +530,7 @@ class RW_Blog_Wizard_Settings {
      *
      */
 
-    static public function plugin_options(){
+    static public function edit_and_combine_plugins(){
         if ( !current_user_can( 'manage_options' ) )  {
             wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
         }
@@ -605,6 +605,7 @@ class RW_Blog_Wizard_Settings {
                                 $options.='<option value="'.$go->ID.'" '.$selected.'>'.$go->post_title.'</option>';
                             }
                             $checked = $p->post_status=='publish'?'checked':'';
+                            $has_parent = !empty($p->post_parent)?'green':'orange';
                         }else{
                             $plugin_url = $plugin_obj['PluginURI'];
                             $plugin_title = $plugin_obj['Title'];
@@ -615,15 +616,23 @@ class RW_Blog_Wizard_Settings {
                                 $options.='<option value="'.$go->ID.'">'.$go->post_title.'</option>';
                             }
                             $checked = '';
+                            $has_parent = 'darkred';
                         }
 
 
 
 
                         ?>
-                        <form method="post" action="<?php echo admin_url('admin-post.php?action=rw_blog_wizard_plugin_options_action') ?>">
+
+                        <tr>
+                                <td><a name="rw-plugin-<?php echo $p->ID;?>"></a></td>
+                                <td colspan="5"></td>
+                        </tr>
                             <tr>
-                                <td><strong style="font-size:1.2em"><?php echo $plugin_title; ?></strong>
+                                <form method="post" action="<?php echo admin_url('admin-post.php?action=rw_blog_wizard_plugin_options_action') ?>#rw-plugin-<?php echo $p->ID;?>">
+                                <td>
+
+                                    <strong style="font-size:1.2em; color:<?php echo $has_parent; ?>"><?php echo $plugin_title; ?></strong>
                                     <br>
                                     <?php echo $plugin_file; ?>
                                     <br>
@@ -651,8 +660,9 @@ class RW_Blog_Wizard_Settings {
                                     <?php  wp_nonce_field('rw_blog_wizard_plugin_options_action'); ?>
                                     <input type="submit" value="Speichern">
                                 </td>
+                                </form>
                             </tr>
-                        </form>
+
                     <?php endif;
                 }
 
@@ -687,7 +697,7 @@ class RW_Blog_Wizard_Settings {
             </table>
         </div>
         <?php
-    } // end function plugin_options
+    } // end function edit_and_combine_plugins
 
 
     /**
@@ -698,7 +708,7 @@ class RW_Blog_Wizard_Settings {
      * @static
      * @useaction hook admin_post_rw_blog_wizard_plugin_options_action
      */
-    static public function plugin_options_action(){
+    static public function edit_and_combine_plugins_action(){
 
         check_admin_referer('rw_blog_wizard_plugin_options_action');
 
@@ -745,6 +755,7 @@ class RW_Blog_Wizard_Settings {
                 'post_excerpt'   => $_POST['required_plugins'],
                 'post_mime_type' => Null,
                 'post_password' => Null,
+                'post_parent' => $group_id?$group_id:0,
                 'meta_input' => array(
                     'plugin_url' => isset($_POST['url'])?$_POST['url']:Null,
                     'plugin_author' =>isset( $_POST['plugin-author'])? $_POST['plugin-author']:Null,
@@ -760,6 +771,7 @@ class RW_Blog_Wizard_Settings {
                 'post_excerpt'   => $_POST['required_plugins'],
                 'post_mime_type' => Null,
                 'post_password' => Null,
+                'post_parent' => $group_id?$group_id:0,
                 'meta_input' => array(
                     'plugin_url' => isset($_POST['url'])?$_POST['url']:Null,
                     'plugin_author' =>isset( $_POST['plugin-author'])? $_POST['plugin-author']:Null,
@@ -801,7 +813,7 @@ class RW_Blog_Wizard_Settings {
 
 
 
-    }// end function plugin_options_action
+    }// end function edit_and_combine_plugins_action
 
 
     /**
@@ -839,7 +851,8 @@ class RW_Blog_Wizard_Settings {
 
 
         foreach ($posts as $p){
-            $group_id =  get_post_meta($p->ID,'plugin_group_id',true);
+            //$group_id =  get_post_meta($p->ID,'plugin_group_id',true);
+            $group_id =  $p->post_parent;
             $plugins[$group_id][]=$p;
         }
 
@@ -955,7 +968,7 @@ class RW_Blog_Wizard_Settings {
         wp_redirect(admin_url('admin.php?blog_wizard_notice='.$message.'&page=rw-addons'));
     }
 
-    static function set_no_wizard_type(){
+    static function set_no_blog_type(){
         check_admin_referer('rw_blog_wizard_deactivate_dashboard_welcome');
 
 
