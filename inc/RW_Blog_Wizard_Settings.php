@@ -71,8 +71,7 @@ class RW_Blog_Wizard_Settings {
                 exit;
             }
 
-
-            $id = wpmu_create_blog( get_current_site()->domain, $path,  $new_blog, 1,array(),1 );
+            $id = wpmu_create_blog( get_current_site()->domain, $path,  $new_blog, 1, array('mature' => 1, 'public' => 0),1 );
 
             if(!$id){
                 wp_redirect(admin_url('network/settings.php?blog_wizard_notice=not_created&slug='.$new_blog.'&page='.RW_Blog_Wizard::$plugin_base_name .''));
@@ -85,10 +84,109 @@ class RW_Blog_Wizard_Settings {
         wp_redirect(admin_url('network/settings.php?blog_wizard_notice=site_created&page='.RW_Blog_Wizard::$plugin_base_name));
         exit;
 
+    }
 
 
+    /**
+     * @link https://wordpress.stackexchange.com/questions/10309/how-to-display-wordpress-user-registration-form-in-front-end-of-the-website
+     */
+    static public function form_create_new_site(){
+        if(!is_user_logged_in()){
+            echo "Bitte zuerst anmelden";
+        }
+        ?>
+        <form method="POST" action="<?php echo admin_url('admin-post.php?action=rw_blog_wizard_plugin_create_new_blog_from_template') ?>">
+            <h2>Neue Websites erstellen</h2>
+            <table>
+                <tr>
+                    <td>
+                        Titel der Seite:
+                    </td>
+                    <td>
+                        <input tape="hidden" name="url" value="<?php echo $_GET['template-url'];?>">
 
+                        <?php  wp_nonce_field('rw_blog_wizard_plugin_create_new_blog_from_template'); ?>
+                    </td>
 
+                </tr>
+                <tr>
+                    <td>
+                        Adresse:
+                    </td>
+                    <td>
+                        <?php echo get_site_url(1);?><input type="text" name="slug" />
+                    </td>
+
+                </tr>
+            </table>
+            <input type="submit" class="button-primary" value="Erstell mir eine Webseite" />
+        </form>
+        <?php
+    }
+
+    static public function create_new_blog_from_template(){
+
+        check_admin_referer('rw_blog_wizard_plugin_create_new_blog_from_template');
+
+        $template_url = trim($_POST['url']);
+
+        if(preg_match('#/template-[^/]+/#',$template_url, $matches)>0){
+            $template_path =  $matches[0];
+        }
+
+        $from_blog = false;
+        $slug = sanitize_title($_POST['slug']);
+        $from_blog_result = get_sites( array('path'=>$template_path) );
+
+        if(count($from_blog_result)>0){
+            $from_blog = $from_blog_result[0];
+        }
+        if($from_blog){
+
+            $user = wp_get_current_user();
+
+            $user_id = get_current_user_id();
+
+            $from_blog_id = $from_blog->blog_id;
+
+            add_user_to_blog($from_blog_id, $user_id, 'administrator');
+
+            $data = array();
+
+            $data['email'] = $user->user_email;
+            $data['domain'] = $slug;
+            $data['newdomain'] = $from_blog->domain;
+            $data['path'] = "/{$slug}/";
+            $data['title'] = $_POST['title'];
+            $data['from_site_id'] = 1;
+            $data['keep_users'] = false;
+            $data['copy_files'] = 'yes';
+            $data['public'] = 1;
+            $data['network_id'] = 1;
+            $data['blog_type'] = $_POST['blog_type'];
+
+            $to_site_id = wpmu_create_blog( $data['newdomain'] , $data['path'], $data['title'], $user_id , array(
+                    'public' => $data['public']
+            ) );
+            MUCD_Duplicate::bypass_server_limit();
+            MUCD_Files::copy_files($from_blog_id, $to_site_id);
+            MUCD_Data::copy_data($from_blog_id, $to_site_id);
+
+            remove_user_from_blog($user_id, $from_blog_id);
+
+            update_blog_option( $to_site_id, 'mucd_duplicable', "no");
+            update_blog_option( $to_site_id, 'rw_blog_wizard_type', $data['blog_type'] );
+/*
+            global $wpdb;
+            $new_table_prefix = $wpdb->get_blog_prefix( $to_site_id );
+            $sql = "UPDATE {$new_table_prefix}options SET option_value='{$data['title']}' WHERE option_name = 'blogname';";
+            $wpdb->query( $sql );
+            $sql = "UPDATE {$new_table_prefix}options SET option_value='{$data['email']}' WHERE option_name = 'admin_email';";
+            $wpdb->query( $sql );
+
+*/
+            wp_cache_flush();
+        }
 
     }
 
@@ -258,6 +356,7 @@ class RW_Blog_Wizard_Settings {
     }
 
 
+
     /**
      * Returns a list of Blog-Types
      *
@@ -274,9 +373,18 @@ class RW_Blog_Wizard_Settings {
 
         $network = is_network_admin();
 
-        $blog_list = get_sites(  array(
-            'search'=> 'template-'
-        ));
+        if($network){
+            $args = array(
+                'search'=> 'template-'
+            );
+        }else{
+            $args =  array(
+                'search'=> 'template-',
+                'mature'=>0
+            );
+        }
+
+        $blog_list = get_sites(  $args );
 
 
 
@@ -546,8 +654,11 @@ class RW_Blog_Wizard_Settings {
         ));
         $sub_plugs=$group_options=array();
         foreach ($posts as $p){
-            if(!empty($p->post_excerpt)){
-                $included = explode("\n",$p->post_excerpt);
+
+	        $plugs = get_post_meta($p->ID,'plugin_collection', true);
+
+	        if(!empty($plugs)){
+                $included = explode("\n",$plugs);
                 foreach ( $included as $incplugs ){
                     $sub_plugs[] = trim($incplugs);
                 }
@@ -590,12 +701,14 @@ class RW_Blog_Wizard_Settings {
                         if(isset($plugins[$plugin_file])){
 
                             $p = $plugins[$plugin_file];
-                            $description = $p->post_content;
+	                        $description = $p->post_content;
                             $plugin_url = get_post_meta($p->ID,'plugin_url',true);
                             $plugin_url = ($plugin_url)?$plugin_url:$plugin_obj['PluginURI'];
                             $plugin_title = $p->post_content_filtered;
                             $plugin_title = ($plugin_title)?$plugin_title:$plugin_obj['Title'];
-                            $required_plugins = $p->post_excerpt;
+
+	                        $required_plugins = get_post_meta($p->ID,'plugin_collection', true);
+	                        var_dump($required_plugins);
                             $options='';
                             foreach ($group_options as $go){
                                 $plugin_group_id =  $go->ID;
@@ -607,7 +720,9 @@ class RW_Blog_Wizard_Settings {
                             $checked = $p->post_status=='publish'?'checked':'';
                             $has_parent = !empty($p->post_parent)?'green':'orange';
                         }else{
-                            $plugin_url = $plugin_obj['PluginURI'];
+	                        //echo '<pre>'; var_dump($plugin_file); echo '</pre>';
+
+	                        $plugin_url = $plugin_obj['PluginURI'];
                             $plugin_title = $plugin_obj['Title'];
                             $description = $plugin_obj['Description'];
                             $required_plugins = '';
@@ -670,7 +785,10 @@ class RW_Blog_Wizard_Settings {
 
                 $p = get_page_by_title('rw-hidden-plugins',OBJECT, 'rw-plugin');
                 if($p){
-                    $required_plugins = $p->post_excerpt;
+	                $post_meta = get_post_meta($p->ID,'plugin_collection', true);
+	               // $plugs = explode("\n",$post_meta->plugin_collection);
+	                $required_plugins = $post_meta;
+
 
                 }else{
                     $required_plugins = '';
@@ -746,39 +864,46 @@ class RW_Blog_Wizard_Settings {
             }
         }
 
+
         if($post!==null){
             wp_update_post(array(
                 'ID'           => $post->ID,
                 'post_content'  => $_POST['description'],
                 'post_content_filtered'  => $_POST['plugin-title'],
                 'post_status'   => $_POST['allowed']?'publish':'private',
-                'post_excerpt'   => $_POST['required_plugins'],
+                'post_excerpt'   => Null,
                 'post_mime_type' => Null,
                 'post_password' => Null,
                 'post_parent' => $group_id?$group_id:0,
+                'post_type'   => 'rw-plugin',
                 'meta_input' => array(
                     'plugin_url' => isset($_POST['url'])?$_POST['url']:Null,
                     'plugin_author' =>isset( $_POST['plugin-author'])? $_POST['plugin-author']:Null,
+                    'plugin_collection' =>isset( $_POST['required_plugins'] ) ? $_POST['required_plugins']:Null  ,
                     'plugin_group_id' =>$group_id
                 ),
             ));
         }else{
+
+
             $postid = wp_insert_post( array(
                 'post_title'    => $_POST['plugin-file'],
                 'post_content_filtered'  => $_POST['plugin-title'],
                 'post_content'  => $_POST['description']?$_POST['description']:'',
                 'post_status'   => $_POST['allowed']?'publish':'private',
-                'post_excerpt'   => $_POST['required_plugins'],
-                'post_mime_type' => Null,
-                'post_password' => Null,
                 'post_parent' => $group_id?$group_id:0,
+                'post_type'   => 'rw-plugin',
                 'meta_input' => array(
                     'plugin_url' => isset($_POST['url'])?$_POST['url']:Null,
                     'plugin_author' =>isset( $_POST['plugin-author'])? $_POST['plugin-author']:Null,
+                    'plugin_collection' =>isset( $_POST['required_plugins'] ) ? $_POST['required_plugins']:Null  ,
                     'plugin_group_id' =>$group_id
-                ),
-                'post_type'   => 'rw-plugin'
+                )
+
             ));
+
+
+
         }// end if
 
 
@@ -879,10 +1004,11 @@ class RW_Blog_Wizard_Settings {
         <div style="width:70%; min-width:400px; padding-left:20px;float: right">
             <div id="accordion">
                 <?php
+                //var_dump($groups);
                 $nonce = wp_create_nonce( 'rw_blog_wizard_activate_selected_plugin_bundle' );
                 foreach($groups as $go):
 
-                    if(count($plugins[$go->ID])>0): ?>
+                    if(isset($go->ID) && isset($plugins[$go->ID]) && count($plugins[$go->ID])>0): ?>
                         <h3><img src="<?php echo get_the_post_thumbnail_url($go,array(80,80))?>"> <?php echo $go->post_title; ?></h3>
                         <div>
                             <quote><?php echo $go->post_content; ?></quote>
@@ -941,9 +1067,15 @@ class RW_Blog_Wizard_Settings {
 
         switch_to_blog(1);
         $plugin = get_post($_GET['id']);
-        restore_current_blog();
+        $post_id=$_GET['id'];
         $activate[] = trim($plugin->post_title);
-        $sub_plugs = explode("\n",$plugin->post_excerpt);
+        $post_meta = get_metadata('post',  $post_id, 'plugin_collection', true);
+
+	    restore_current_blog();
+
+	    $sub_plugs = explode("\n",$post_meta);
+
+
         foreach ($sub_plugs as $p){
             if(!empty(trim($p))){
                 $activate[] = trim($p);
@@ -975,6 +1107,29 @@ class RW_Blog_Wizard_Settings {
         update_option('rw_blog_wizard_type','nowizard');
         wp_redirect(admin_url('index.php'));
         exit;
+    }
+
+    static function on_save_template_description_set_public($post_id, $post, $update ){
+        if(preg_match('#/template-[^/]+/instruction/#',$post->guid, $matches)>0){
+            //get the blog path
+
+
+            $blogs = get_sites(array(
+                    'path'=>str_replace('instruction/','',$matches[0])
+            ));
+            if(isset($blogs[0])){
+
+                if($post->post_status == 'publish'){
+                    $blogdetail= array('mature' => 0);
+                }else{
+                    $blogdetail= array('mature' => 1);
+                }
+
+                $blog = $blogs[0];
+                update_blog_details($blog->blog_id, $blogdetail);
+            }
+        }
+
     }
 
 }

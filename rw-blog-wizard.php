@@ -26,7 +26,7 @@
  * Plugin Name:       RW Blog Wizard
  * Plugin URI:        https://github.com/rpi-virtuell/rw-blog-wizard
  * Description:       Multisiteplugin, das dem Administrator eines Blogs die Möglichkeit gibt, vorkonfigurierte Plugins und Themes zu laden.
- * Version:           0.0.4
+ * Version:           0.0.5
  * Author:            Joachim Happel
  * Author URI:        http://joachim-happel.de
  * License:           GNU General Public License v2
@@ -49,7 +49,7 @@ class RW_Blog_Wizard {
      * @since   0.0.1
      * @access  public
      */
-    static public $version = "0.0.4";
+    static public $version = "0.0.5";
 
     /**
      * Singleton object holder
@@ -168,6 +168,8 @@ class RW_Blog_Wizard {
                                                  array( 'RW_Blog_Wizard_Settings', 'activate_selected_plugin_bundle' ) );
         add_action( 'admin_post_rw_blog_wizard_deactivate_dashboard_welcome',
                                                  array( 'RW_Blog_Wizard_Settings', 'set_no_blog_type' ) );
+        add_action( 'admin_post_rw_blog_wizard_plugin_create_new_blog_from_template',
+                                                 array( 'RW_Blog_Wizard_Settings', 'create_new_blog_from_template' ) );
         add_action( 'admin_init',                array( 'RW_Blog_Wizard_Settings', 'register_blog_type' ) );
         add_action( 'admin_menu',                array( 'RW_Blog_Wizard_Settings', 'admin_menu' ) );
         add_action( 'network_admin_menu',        array( 'RW_Blog_Wizard_Settings', 'admin_menu' ) );
@@ -194,6 +196,11 @@ class RW_Blog_Wizard {
         add_action( 'admin_notices', array( 'RW_Blog_Wizard_Settings', 'admin_notice' ) );
 
         add_action('wp_dashboard_setup',array( 'RW_Blog_Wizard_Core','setup_dashboard_widgets' ),9999);
+
+        add_action( 'save_post',  array( 'RW_Blog_Wizard_Settings', 'on_save_template_description_set_public' ), 10, 3  );
+
+
+
     }
 
     /**

@@ -49,7 +49,7 @@ class RW_Blog_Wizard_Installation {
         // @TODO  Checks einbaun die das Plugin ggf als Abhängigkeiten hat. buddypress, MU, bbPress usw
 
 
-        if ( !class_exists( 'multisite-clone-duplicator' ) ) {
+        if ( !class_exists( 'MUCD_Duplicate' ) ) {
 
             deactivate_plugins( RW_Blog_Wizard::$plugin_filename  );
             die( __('Multisite Clone Duplicator is required! Please install first.', RW_Blog_Wizard::get_textdomain() ) );

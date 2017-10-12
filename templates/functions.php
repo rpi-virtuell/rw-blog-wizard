@@ -15,5 +15,4 @@ function rw_blog_wizard_action( $post_object ) {
     </div>
     <?php
 }
-add_action( 'wp_head', 'rw_blog_wizard_action' );
-do_action( 'rw_blog_wizard_action' );
+//add_action( 'wp_head', 'rw_blog_wizard_action' );
