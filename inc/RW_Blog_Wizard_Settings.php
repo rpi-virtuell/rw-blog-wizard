@@ -654,9 +654,11 @@ class RW_Blog_Wizard_Settings {
         ));
         $sub_plugs=$group_options=array();
         foreach ($posts as $p){
+			
+	        $plugs = get_metadata('post',$p->ID,'plugin_collection', true);
 
-	        $plugs = get_post_meta($p->ID,'plugin_collection', true);
-
+			//var_dump($plugs);
+			
 	        if(!empty($plugs)){
                 $included = explode("\n",$plugs);
                 foreach ( $included as $incplugs ){
@@ -708,7 +710,7 @@ class RW_Blog_Wizard_Settings {
                             $plugin_title = ($plugin_title)?$plugin_title:$plugin_obj['Title'];
 
 	                        $required_plugins = get_post_meta($p->ID,'plugin_collection', true);
-	                        var_dump($required_plugins);
+	                        //var_dump($required_plugins);
                             $options='';
                             foreach ($group_options as $go){
                                 $plugin_group_id =  $go->ID;
