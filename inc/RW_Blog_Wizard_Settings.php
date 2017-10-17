@@ -24,13 +24,19 @@ class RW_Blog_Wizard_Settings {
      */
     static public function register_blog_type() {
 
-         $admin_url = admin_url('index.php?blog_wizard_notice=');
-
-        register_setting( 'rw_blog_wizard_options', 'rw_blog_wizard_type' );
-        if(self::set_blog_type()){
-            wp_redirect($admin_url.'site_cloned');
-            exit;
-        }
+		if( current_user_can('administrator')){
+			$admin_url = admin_url('index.php?blog_wizard_notice=');
+		
+			register_setting( 'rw_blog_wizard_options', 'rw_blog_wizard_type' );
+			
+			if(self::set_blog_type()){
+				wp_redirect($admin_url.'site_cloned');
+				exit;
+			}	
+		}
+	
+        
+		
 
 
     }

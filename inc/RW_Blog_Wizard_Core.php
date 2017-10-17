@@ -104,15 +104,16 @@ class RW_Blog_Wizard_Core {
 
         $blog = get_blog_details();
         $blog->post_count;
+		
 
         if( !is_network_admin() &&  get_current_blog_id() > 1 && $blog->post_count < 2 ) {
 
-            remove_meta_box('dashboard_incoming_links', 'dashboard', 'normal');
-            //remove_meta_box('dashboard_plugins', 'dashboard', 'normal');
+            //remove_meta_box('dashboard_incoming_links', 'dashboard', 'normal');
+            remove_meta_box('dashboard_plugins', 'dashboard', 'normal');
             remove_meta_box('dashboard_recent_comments', 'dashboard', 'normal');
 
             remove_meta_box('dashboard_quick_press', 'dashboard', 'side');
-            //remove_meta_box('dashboard_primary', 'dashboard', 'side');
+            remove_meta_box('dashboard_primary', 'dashboard', 'side');
             remove_meta_box('dashboard_secondary', 'dashboard', 'side');
 
             if (empty(get_option('rw_blog_wizard_type'))) {
@@ -127,6 +128,11 @@ class RW_Blog_Wizard_Core {
 
             }
         }
+		if( !current_user_can('administrator')){
+			remove_meta_box('dashboard_plugins', 'dashboard', 'normal');
+            remove_meta_box('dashboard_primary', 'dashboard', 'side');
+            
+		}
     }
 
 
