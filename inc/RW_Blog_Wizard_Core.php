@@ -143,11 +143,11 @@ class RW_Blog_Wizard_Core {
 
         ?>
         <div class="welcome-panel-content">
-            <h2>Willkommen in unserem Bogssystem!</h2>
+            <h2>Willkommen in unserem Blogssystem!</h2>
             <p class="about-description">Wir haben einige Links zusammengestellt, um dir den Start zu erleichtern:</p>
             <div class="welcome-panel-column-container">
 
-                    <h3>Jetzt deine Seite Konfigurieren</h3>
+                    <h3>Jetzt deine Seite konfigurieren</h3>
                     <p>Wähle aus verschiedenen Vorlagen eine am ehesten geeignete Webseite aus, die du anschließend mit deinen eigenen inhalten befüllen kannst. </p>
                     <a class="button button-primary button-hero load-customize hide-if-no-customize" href="<?php echo admin_url('options-general.php?page='.urlencode(RW_Blog_Wizard::$plugin_base_name));?>">Vorlage aussuchen</a>
 
