@@ -195,7 +195,7 @@ class RW_Blog_Wizard {
         add_action( 'network_admin_notices', array( 'RW_Blog_Wizard_Settings', 'admin_notice' ) );
         add_action( 'admin_notices', array( 'RW_Blog_Wizard_Settings', 'admin_notice' ) );
 
-        add_action('wp_dashboard_setup',array( 'RW_Blog_Wizard_Core','setup_dashboard_widgets' ),9999);
+        //add_action('wp_dashboard_setup',array( 'RW_Blog_Wizard_Core','setup_dashboard_widgets' ),9999);
 
         add_action( 'save_post',  array( 'RW_Blog_Wizard_Settings', 'on_save_template_description_set_public' ), 10, 3  );
 
