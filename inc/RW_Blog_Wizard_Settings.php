@@ -504,8 +504,8 @@ class RW_Blog_Wizard_Settings {
 
             add_submenu_page(
                 'settings.php',
-                'Einrichtiungshilfe',
-                'Einrichtiungshilfe',
+                'Einrichtungshilfe',
+                'Einrichtungshilfe',
                 'manage_network_options',
                 RW_Blog_Wizard::$plugin_base_name,
                 array('RW_Blog_Wizard_Settings', 'display_blog_templates')
